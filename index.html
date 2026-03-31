@@ -469,10 +469,8 @@
                 e("input", { className: "input-field", placeholder: "e.g. Apple Inc.", value: investForm.name, onChange: ev => setInvestForm({ ...investForm, name: ev.target.value }) })
               ),
               e("div", { className: "form-group" },
-                e("label", { className: "form-label" }, "Category"),
-                e("select", { className: "input-field", value: investForm.category, onChange: ev => setInvestForm({ ...investForm, category: ev.target.value }) },
-                  categories.map(c => e("option", { key: c, value: c }, c))
-                )
+                e("label", { className: "form-label" }, "Category (e.g. Stocks, Real Estate, Art, etc.)"),
+                e("input", { className: "input-field", placeholder: "Type any investment type", value: investForm.category, onChange: ev => setInvestForm({ ...investForm, category: ev.target.value }) })
               ),
               e("div", { className: "form-row" },
                 e("div", { className: "form-group" },
@@ -514,10 +512,8 @@
                 e("input", { className: "input-field", value: investForm.name, onChange: ev => setInvestForm({ ...investForm, name: ev.target.value }) })
               ),
               e("div", { className: "form-group" },
-                e("label", { className: "form-label" }, "Category"),
-                e("select", { className: "input-field", value: investForm.category, onChange: ev => setInvestForm({ ...investForm, category: ev.target.value }) },
-                  categories.map(c => e("option", { key: c, value: c }, c))
-                )
+                e("label", { className: "form-label" }, "Category (e.g. Stocks, Real Estate, Art, etc.)"),
+                e("input", { className: "input-field", placeholder: "Type any investment type", value: investForm.category, onChange: ev => setInvestForm({ ...investForm, category: ev.target.value }) })
               ),
               e("div", { className: "form-row" },
                 e("div", { className: "form-group" },
