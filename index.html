@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FinPortal - Financial Portfolio Dashboard</title>
+  <title>Wealth Management Dashboard</title>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <style>
@@ -11,86 +11,129 @@
     html, body { height: 100%; width: 100%; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #0c0a1d 0%, #111827 50%, #0c0a1d 100%);
+      background: #0f1419;
       color: #fff;
     }
-    #root { min-height: 100vh; display: flex; flex-direction: column; }
-    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; width: 100%; }
-    .header { padding: 24px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
+    #root { min-height: 100vh; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
     .header-left { display: flex; align-items: center; gap: 12px; }
-    .header-logo { width: 40px; height: 40px; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
-    h1 { font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #c7d2fe, #e0e7ff, #a5b4fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .nav-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
-    .btn { padding: 10px 16px; border: none; border-radius: 12px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+    .header-title { font-size: 24px; font-weight: 600; }
+    .check-icon { color: #10b981; font-size: 20px; }
+    .header-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .timestamp { font-size: 12px; color: #9ca3af; }
+
+    .btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
     .btn-primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; }
     .btn-primary:hover { opacity: 0.9; }
-    .btn-secondary { background: rgba(255,255,255,0.05); color: #9ca3af; border: 1px solid transparent; }
-    .btn-secondary:hover { background: rgba(255,255,255,0.1); }
-    .btn-secondary.active { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; }
-    .btn-sm { padding: 6px 12px; font-size: 12px; }
-    .btn-icon { background: transparent; border: 1px solid rgba(99,102,241,0.3); color: #a5b4fc; padding: 6px 12px; border-radius: 8px; }
-    .btn-icon:hover { background: rgba(99,102,241,0.15); }
-    .content { flex: 1; padding: 32px 0; }
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-bottom: 32px; }
-    .stat-card {
-      background: linear-gradient(145deg, rgba(30,27,75,0.8) 0%, rgba(15,23,42,0.8) 100%);
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 16px;
-      padding: 20px;
-      transition: transform 0.2s;
+    .btn-secondary { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); }
+    .btn-secondary:hover { background: rgba(255,255,255,0.15); }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
     }
-    .stat-card:hover { transform: scale(1.03); }
-    .card {
-      background: linear-gradient(145deg, rgba(30,27,75,0.6) 0%, rgba(15,23,42,0.6) 100%);
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 16px;
+    .stat-card {
+      border: 1px solid rgba(99,102,241,0.3);
+      border-radius: 12px;
+      padding: 20px;
+      background: rgba(30,27,75,0.4);
+    }
+    .stat-label { font-size: 12px; color: #9ca3af; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
+    .stat-value { font-size: 24px; font-weight: 700; }
+
+    .section {
+      background: rgba(30,27,75,0.6);
+      border: 1px solid rgba(99,102,241,0.2);
+      border-radius: 12px;
       padding: 24px;
       margin-bottom: 24px;
     }
-    .stat-label { font-size: 11px; font-weight: 500; color: #9ca3af; text-transform: uppercase; margin-bottom: 8px; }
-    .stat-value { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
-    .stat-sub { font-size: 12px; }
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 50; }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: rgba(0,0,0,0.3); }
+    th {
+      text-align: left;
+      padding: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #9ca3af;
+      text-transform: uppercase;
+      border-bottom: 1px solid rgba(99,102,241,0.2);
+    }
+    td { padding: 14px 12px; border-bottom: 1px solid rgba(99,102,241,0.1); }
+    tbody tr:hover { background: rgba(99,102,241,0.05); }
+
+    .progress-bar {
+      height: 6px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+      overflow: hidden;
+      margin: 4px 0;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #6366f1, #8b5cf6);
+      border-radius: 3px;
+    }
+
+    .amount { text-align: right; font-weight: 500; }
+    .percentage { text-align: right; font-size: 12px; color: #9ca3af; }
+
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 50; }
     .modal.show { display: flex; align-items: center; justify-content: center; }
-    .modal-content { background: linear-gradient(145deg, #1e1b4b 0%, #0f172a 100%); border: 1px solid rgba(99,102,241,0.3); border-radius: 16px; width: 90%; max-width: 480px; box-shadow: 0 25px 60px rgba(0,0,0,0.5); }
-    .modal-header { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; }
+    .modal-content {
+      background: #1e1b4b;
+      border: 1px solid rgba(99,102,241,0.3);
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-header { padding: 20px; border-bottom: 1px solid rgba(99,102,241,0.2); display: flex; justify-content: space-between; align-items: center; }
     .modal-body { padding: 20px; }
-
     .form-group { margin-bottom: 16px; }
     .form-label { display: block; font-size: 13px; font-weight: 500; color: #d1d5db; margin-bottom: 6px; }
-    .input-field { width: 100%; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #fff; font-size: 14px; }
+    .input-field { width: 100%; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #fff; font-size: 14px; }
     .input-field:focus { outline: none; border-color: rgba(99,102,241,0.6); }
-
-    .portfolio-card { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.06); cursor: pointer; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-    .portfolio-card:hover { background: rgba(255,255,255,0.02); }
-    .portfolio-name { font-size: 17px; font-weight: 600; }
-    .portfolio-desc { font-size: 13px; color: #9ca3af; }
-
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th { text-align: left; padding: 12px; color: #9ca3af; font-weight: 500; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.06); }
-    td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); }
-    tbody tr:hover { background: rgba(255,255,255,0.03); }
-    .text-right { text-align: right; }
-    .text-green { color: #10b981; }
-    .text-red { color: #ef4444; }
-    .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; background: rgba(99,102,241,0.15); color: #a5b4fc; }
-
-    .empty-state { text-align: center; padding: 64px 20px; }
-    .empty-state h3 { font-size: 20px; font-weight: 600; color: #d1d5db; margin: 16px 0 8px; }
-    .empty-state p { color: #9ca3af; margin-bottom: 24px; }
-
-    .portfolio-actions { display: flex; gap: 8px; }
-    .chart-simple { display: flex; align-items: flex-end; gap: 12px; height: 200px; justify-content: space-around; }
-    .chart-bar { flex: 1; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 8px 8px 0 0; min-height: 20px; position: relative; }
-    .chart-label { position: absolute; bottom: -25px; left: 0; right: 0; text-align: center; font-size: 11px; color: #9ca3af; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .action-buttons { display: flex; gap: 8px; }
+    .btn-sm { padding: 6px 10px; font-size: 11px; }
+
+    .empty-state { text-align: center; padding: 40px; color: #6b7280; }
+
+    @media print {
+      body { background: white; color: black; }
+      .header-right { display: none; }
+      .btn { display: none; }
+      .modal { display: none !important; }
+    }
+
     @media (max-width: 768px) {
       .form-row { grid-template-columns: 1fr; }
-      .header-content { flex-direction: column; align-items: flex-start; }
-      .portfolio-card { flex-direction: column; align-items: flex-start; }
+      .header { flex-direction: column; align-items: flex-start; }
+      table { font-size: 12px; }
+      th, td { padding: 8px; }
     }
   </style>
 </head>
@@ -100,470 +143,251 @@
     const { useState, useEffect, useMemo } = React;
     const e = React.createElement;
 
-    const fmt = n => "$" + Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
-    const fmtPct = n => (n >= 0 ? "+" : "") + Number(n).toFixed(2) + "%";
+    const fmt = n => "₹" + Number(n).toLocaleString("en-IN");
     const loadData = (key, fallback) => { try { const d = localStorage.getItem(key); return d ? JSON.parse(d) : fallback; } catch { return fallback; } };
 
-    const defaultCategories = ["Stocks", "Mutual Funds", "Bonds", "Real Estate", "Crypto", "Cash"];
-    const ICONS = { Stocks: "📈", "Mutual Funds": "📊", Bonds: "🏦", "Real Estate": "🏠", Crypto: "₿", Cash: "💵" };
-
-    const samplePortfolios = [
-      { id: 1, name: "Retirement Fund", description: "Long-term retirement savings", investments: [
-        { id: 1, name: "S&P 500 Index Fund", category: "Mutual Funds", invested: 45000, current: 52300, units: 120, date: "2023-01-15" },
-        { id: 2, name: "Apple Inc.", category: "Stocks", invested: 15000, current: 19200, units: 85, date: "2022-06-20" },
-        { id: 3, name: "US Treasury Bonds", category: "Bonds", invested: 30000, current: 31500, units: 30, date: "2021-11-01" },
-      ]},
-      { id: 2, name: "Growth Portfolio", description: "Aggressive growth", investments: [
-        { id: 1, name: "Tesla Inc.", category: "Stocks", invested: 20000, current: 26500, units: 50, date: "2023-05-10" },
-        { id: 2, name: "NVIDIA Corp.", category: "Stocks", invested: 18000, current: 31200, units: 30, date: "2023-02-14" },
-      ]},
-      { id: 3, name: "Conservative Fund", description: "Low-risk stable returns", investments: [
-        { id: 1, name: "Municipal Bonds", category: "Bonds", invested: 40000, current: 42200, units: 40, date: "2022-03-01" },
-      ]},
+    const defaultAssets = [
+      { id: 1, category: "Liquid cash", amount: 85000, account: "Savings Account", remarks: "Emergency fund" },
+      { id: 2, category: "Fixed Deposits", amount: 600000, account: "SBI FD", remarks: "3-year tenure" },
+      { id: 3, category: "Mutual Funds", amount: 200000, account: "HDFC Equity Fund", remarks: "Regular investment" },
+      { id: 4, category: "Insurance (ULIPs)", amount: 340000, account: "ICICI ULIPs", remarks: "Protection + Growth" },
+      { id: 5, category: "Public Provident Funds & Sukanya Samriddhi", amount: 885000, account: "PPF Account", remarks: "Tax-free growth" },
+      { id: 6, category: "Stocks", amount: 2550000, account: "HDFC, TCS, Infosys", remarks: "Blue chip stocks" },
+      { id: 7, category: "Provident Fund", amount: 1140000, account: "EPF Account", remarks: "Retirement corpus" },
+      { id: 8, category: "Gratuity & Leave encashment", amount: 160000, account: "Accrued benefits", remarks: "Employer benefits" },
+      { id: 9, category: "Gold assets", amount: 972000, account: "Physical Gold", remarks: "Safe deposit locker" },
+      { id: 10, category: "Property and Vehicles", amount: 3170000, account: "Primary residence + Car", remarks: "Personal assets" }
     ];
 
     function App() {
-      const [portfolios, setPortfolios] = useState(() => loadData("fp_portfolios", samplePortfolios));
-      const [categories, setCategories] = useState(() => loadData("fp_categories", defaultCategories));
-      const [view, setView] = useState("overview");
-      const [expanded, setExpanded] = useState(null);
+      const [assets, setAssets] = useState(() => loadData("wealth_assets", defaultAssets));
       const [modal, setModal] = useState(null);
       const [form, setForm] = useState({});
-      const [investForm, setInvestForm] = useState({ name: "", category: categories[0] || "", invested: "", current: "", units: "", date: "" });
-      const [editInv, setEditInv] = useState(null);
-      const [newCat, setNewCat] = useState("");
-      const [activePort, setActivePort] = useState(null);
+      const [editId, setEditId] = useState(null);
+      const [lastSaved, setLastSaved] = useState(new Date());
 
-      useEffect(() => { localStorage.setItem("fp_portfolios", JSON.stringify(portfolios)); }, [portfolios]);
-      useEffect(() => { localStorage.setItem("fp_categories", JSON.stringify(categories)); }, [categories]);
+      useEffect(() => { localStorage.setItem("wealth_assets", JSON.stringify(assets)); }, [assets]);
 
-      const stats = useMemo(() => {
-        let invested = 0, current = 0;
-        portfolios.forEach(p => p.investments.forEach(i => { invested += i.invested; current += i.current; }));
-        return { invested, current, gain: current - invested, pct: invested ? ((current - invested) / invested) * 100 : 0 };
-      }, [portfolios]);
+      const totalWorth = useMemo(() => assets.reduce((s, a) => s + a.amount, 0), [assets]);
 
-      const catBreakdown = useMemo(() => {
-        const m = {};
-        portfolios.forEach(p => p.investments.forEach(i => {
-          if (!m[i.category]) m[i.category] = { invested: 0, current: 0 };
-          m[i.category].invested += i.invested;
-          m[i.category].current += i.current;
-        }));
-        return Object.entries(m).map(([name, v]) => ({ name, invested: v.invested, current: v.current, gain: v.current - v.invested }));
-      }, [portfolios]);
+      const categoryBreakdown = useMemo(() => {
+        const map = {};
+        assets.forEach(a => {
+          if (!map[a.category]) map[a.category] = 0;
+          map[a.category] += a.amount;
+        });
+        return Object.entries(map).map(([cat, amt]) => ({
+          category: cat,
+          amount: amt,
+          percentage: totalWorth ? ((amt / totalWorth) * 100).toFixed(1) : 0
+        })).sort((a, b) => b.amount - a.amount);
+      }, [assets, totalWorth]);
 
-      const pSummaries = useMemo(() =>
-        portfolios.map(p => {
-          const invested = p.investments.reduce((s, i) => s + i.invested, 0);
-          const current = p.investments.reduce((s, i) => s + i.current, 0);
-          return { ...p, invested, current, gain: current - invested, pct: invested ? ((current - invested) / invested) * 100 : 0 };
-        }), [portfolios]);
+      const liquidAssets = useMemo(() =>
+        assets.filter(a => ["Liquid cash", "Fixed Deposits", "Mutual Funds"].includes(a.category))
+          .reduce((s, a) => s + a.amount, 0), [assets]);
 
-      const exportData = () => {
-        const data = JSON.stringify({ portfolios, categories }, null, 2);
-        const blob = new Blob([data], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "finportal-backup.json";
-        a.click();
-        URL.revokeObjectURL(url);
-      };
+      const physicalAssets = useMemo(() =>
+        assets.filter(a => ["Gold assets", "Property and Vehicles"].includes(a.category))
+          .reduce((s, a) => s + a.amount, 0), [assets]);
 
-      const importData = () => {
-        const input = document.createElement("input");
-        input.type = "file";
-        input.accept = ".json";
-        input.onchange = ev => {
-          const file = ev.target.files[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = e => {
-            try {
-              const d = JSON.parse(e.target.result);
-              if (d.portfolios) setPortfolios(d.portfolios);
-              if (d.categories) setCategories(d.categories);
-              alert("Data imported!");
-            } catch { alert("Invalid file"); }
-          };
-          reader.readAsText(file);
-        };
-        input.click();
-      };
-
-      const addPortfolio = () => {
-        if (!form.name) return;
-        setPortfolios(p => [...p, { id: Date.now(), name: form.name, description: form.description || "", investments: [] }]);
-        setModal(null);
+      const addAsset = () => {
+        if (!form.category || !form.amount) return;
+        setAssets(prev => [...prev, { id: Date.now(), ...form }]);
         setForm({});
-      };
-
-      const updatePortfolio = () => {
-        if (!form.name) return;
-        setPortfolios(p => p.map(x => x.id === form.id ? { ...x, name: form.name, description: form.description || "" } : x));
         setModal(null);
-        setForm({});
+        setLastSaved(new Date());
       };
 
-      const deletePortfolio = id => {
-        if (confirm("Delete this portfolio?")) {
-          setPortfolios(p => p.filter(x => x.id !== id));
-          if (expanded === id) setExpanded(null);
+      const updateAsset = () => {
+        setAssets(prev => prev.map(a => a.id === editId ? { ...a, ...form } : a));
+        setForm({});
+        setEditId(null);
+        setModal(null);
+        setLastSaved(new Date());
+      };
+
+      const deleteAsset = id => {
+        if (confirm("Delete this asset?")) {
+          setAssets(prev => prev.filter(a => a.id !== id));
+          setLastSaved(new Date());
         }
       };
 
-      const addInvestment = () => {
-        if (!investForm.name || !investForm.invested) return;
-        const inv = { id: Date.now(), name: investForm.name, category: investForm.category, invested: +investForm.invested, current: +investForm.current, units: +investForm.units, date: investForm.date };
-        setPortfolios(p => p.map(x => x.id === activePort ? { ...x, investments: [...x.investments, inv] } : x));
-        setModal(null);
-        setInvestForm({ name: "", category: categories[0] || "", invested: "", current: "", units: "", date: "" });
+      const exportPDF = () => {
+        const content = `WEALTH MANAGEMENT DASHBOARD
+Total Net Worth: ${fmt(totalWorth)}
+Liquid Assets: ${fmt(liquidAssets)}
+Physical Assets: ${fmt(physicalAssets)}
+
+${categoryBreakdown.map(c => `${c.category}: ${fmt(c.amount)} (${c.percentage}%)`).join('\n')}
+`;
+        const blob = new Blob([content], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "wealth-report.txt";
+        a.click();
       };
 
-      const updateInvestment = () => {
-        const inv = { ...editInv, name: investForm.name, category: investForm.category, invested: +investForm.invested, current: +investForm.current, units: +investForm.units, date: investForm.date };
-        setPortfolios(p => p.map(x => x.id === activePort ? { ...x, investments: x.investments.map(i => i.id === inv.id ? inv : i) } : x));
-        setModal(null);
-        setEditInv(null);
-        setInvestForm({ name: "", category: categories[0] || "", invested: "", current: "", units: "", date: "" });
-      };
-
-      const deleteInvestment = (pid, iid) => {
-        setPortfolios(p => p.map(x => x.id === pid ? { ...x, investments: x.investments.filter(i => i.id !== iid) } : x));
-      };
-
-      const addCategory = () => {
-        if (!newCat.trim() || categories.includes(newCat)) return;
-        setCategories(p => [...p, newCat.trim()]);
-        setNewCat("");
-      };
-
-      const deleteCategory = cat => setCategories(p => p.filter(c => c !== cat));
+      const timeStr = lastSaved.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
 
       return e("div", null,
-        // HEADER
-        e("header", { className: "header" },
-          e("div", { className: "container" },
-            e("div", { className: "header-content" },
-              e("div", { className: "header-left" },
-                e("div", { className: "header-logo" }, "💼"),
-                e("h1", null, "FinPortal")
+        e("div", { className: "container" },
+          // HEADER
+          e("div", { className: "header" },
+            e("div", { className: "header-left" },
+              e("span", { className: "check-icon" }, "✓"),
+              e("h1", { className: "header-title" }, "Wealth Management")
+            ),
+            e("div", { className: "header-right" },
+              e("span", { className: "timestamp" }, `Saved at ${timeStr}`),
+              e("button", { className: "btn btn-secondary btn-sm", onClick: () => window.print() }, "🖨️ Print"),
+              e("button", { className: "btn btn-secondary btn-sm", onClick: exportPDF }, "⬇️ Download"),
+              e("button", { className: "btn btn-primary btn-sm", onClick: () => { setForm({}); setEditId(null); setModal("add"); } }, "+ Add Asset")
+            )
+          ),
+
+          // SUMMARY CARDS
+          e("div", { className: "stats-grid" },
+            e("div", { className: "stat-card" },
+              e("div", { className: "stat-label" }, "Total Net Worth"),
+              e("div", { className: "stat-value" }, fmt(totalWorth))
+            ),
+            e("div", { className: "stat-card" },
+              e("div", { className: "stat-label" }, "Liquid / Financial Assets"),
+              e("div", { className: "stat-value" }, fmt(liquidAssets))
+            ),
+            e("div", { className: "stat-card" },
+              e("div", { className: "stat-label" }, "Physical / Gold Assets"),
+              e("div", { className: "stat-value" }, fmt(physicalAssets))
+            )
+          ),
+
+          // EXECUTIVE SUMMARY
+          e("div", { className: "section" },
+            e("h2", { className: "section-title" }, "📊 Executive Summary"),
+            e("table", null,
+              e("thead", null,
+                e("tr", null,
+                  e("th", null, "Asset Category"),
+                  e("th", { className: "amount" }, "Amount (INR)"),
+                  e("th", null, "Portfolio Allocation")
+                )
               ),
-              e("div", { className: "nav-buttons" },
-                e("button", { className: `btn btn-secondary ${view === "overview" ? "active" : ""}`, onClick: () => setView("overview") }, "📊 Overview"),
-                e("button", { className: `btn btn-secondary ${view === "portfolios" ? "active" : ""}`, onClick: () => setView("portfolios") }, "💰 Portfolios"),
-                e("button", { className: "btn btn-secondary", onClick: () => setModal("categories") }, "📝 Categories"),
-                e("button", { className: "btn btn-secondary", onClick: exportData }, "⬇️ Export"),
-                e("button", { className: "btn btn-secondary", onClick: importData }, "⬆️ Import")
+              e("tbody", null,
+                categoryBreakdown.map(c =>
+                  e("tr", { key: c.category },
+                    e("td", null, c.category),
+                    e("td", { className: "amount" }, fmt(c.amount)),
+                    e("td", null,
+                      e("div", { className: "progress-bar" },
+                        e("div", { className: "progress-fill", style: { width: c.percentage + "%" } })
+                      ),
+                      e("div", { className: "percentage" }, c.percentage + "%")
+                    )
+                  )
+                ),
+                e("tr", { style: { background: "rgba(99,102,241,0.1)", fontWeight: "600" } },
+                  e("td", null, "Total"),
+                  e("td", { className: "amount" }, fmt(totalWorth)),
+                  e("td", null, "100%")
+                )
               )
             )
-          )
-        ),
+          ),
 
-        // CONTENT
-        e("main", { className: "content" },
-          e("div", { className: "container" },
-            // STATS
-            e("div", { className: "stats-grid" },
-              e("div", { className: "stat-card" },
-                e("div", { className: "stat-label" }, "📊 Total Invested"),
-                e("div", { className: "stat-value" }, fmt(stats.invested))
-              ),
-              e("div", { className: "stat-card" },
-                e("div", { className: "stat-label" }, "📈 Current Value"),
-                e("div", { className: "stat-value" }, fmt(stats.current))
-              ),
-              e("div", { className: "stat-card" },
-                e("div", { className: "stat-label" }, stats.gain >= 0 ? "✅ Gain" : "⚠️ Loss"),
-                e("div", { className: "stat-value", style: { color: stats.gain >= 0 ? "#10b981" : "#ef4444" } }, fmt(Math.abs(stats.gain))),
-                e("div", { className: "stat-sub", style: { color: stats.gain >= 0 ? "#10b981" : "#ef4444" } }, fmtPct(stats.pct))
-              ),
-              e("div", { className: "stat-card" },
-                e("div", { className: "stat-label" }, "💼 Portfolios"),
-                e("div", { className: "stat-value" }, portfolios.length),
-                e("div", { className: "stat-sub", style: { color: "#9ca3af" } }, portfolios.reduce((s, p) => s + p.investments.length, 0) + " investments")
-              )
-            ),
-
-            // OVERVIEW
-            view === "overview" ? e(React.Fragment, null,
-              e("div", { className: "card" },
-                e("h3", { style: { fontSize: 17, fontWeight: 600, marginBottom: 16 } }, "Category Breakdown"),
-                e("table", null,
-                  e("thead", null,
-                    e("tr", null,
-                      e("th", null, "Category"),
-                      e("th", { className: "text-right" }, "Invested"),
-                      e("th", { className: "text-right" }, "Current"),
-                      e("th", { className: "text-right" }, "Gain/Loss")
-                    )
-                  ),
-                  e("tbody", null,
-                    catBreakdown.length > 0 ? catBreakdown.map(c =>
-                      e("tr", { key: c.name },
-                        e("td", null, (ICONS[c.name] || "📌") + " " + c.name),
-                        e("td", { className: "text-right", style: { color: "#9ca3af" } }, fmt(c.invested)),
-                        e("td", { className: "text-right" }, fmt(c.current)),
-                        e("td", { className: `text-right ${c.gain >= 0 ? "text-green" : "text-red"}` }, fmt(c.gain))
-                      )
-                    ) : e("tr", null, e("td", { colSpan: 4, style: { textAlign: "center", color: "#6b7280" } }, "No data"))
-                  )
+          // PORTFOLIO DETAILS
+          e("div", { className: "section" },
+            e("h2", { className: "section-title" }, "👤 Portfolio Details"),
+            e("table", null,
+              e("thead", null,
+                e("tr", null,
+                  e("th", null, "Asset Category"),
+                  e("th", null, "Account / Policy"),
+                  e("th", null, "Remarks"),
+                  e("th", { className: "amount" }, "Amount (INR)"),
+                  e("th", null, "Actions")
                 )
               ),
-              e("div", { className: "card" },
-                e("h3", { style: { fontSize: 17, fontWeight: 600, marginBottom: 16 } }, "Portfolio Performance"),
-                e("table", null,
-                  e("thead", null,
-                    e("tr", null,
-                      e("th", null, "Portfolio"),
-                      e("th", { className: "text-right" }, "Value"),
-                      e("th", { className: "text-right" }, "Gain"),
-                      e("th", { className: "text-right" }, "Return %")
-                    )
-                  ),
-                  e("tbody", null,
-                    pSummaries.map(p =>
-                      e("tr", { key: p.id },
-                        e("td", null, p.name),
-                        e("td", { className: "text-right" }, fmt(p.current)),
-                        e("td", { className: `text-right ${p.gain >= 0 ? "text-green" : "text-red"}` }, fmt(p.gain)),
-                        e("td", { className: `text-right ${p.pct >= 0 ? "text-green" : "text-red"}` }, fmtPct(p.pct))
+              e("tbody", null,
+                assets.length > 0 ? assets.map(a =>
+                  e("tr", { key: a.id },
+                    e("td", null, a.category),
+                    e("td", null, a.account || "-"),
+                    e("td", null, a.remarks || "-"),
+                    e("td", { className: "amount" }, fmt(a.amount)),
+                    e("td", null,
+                      e("div", { className: "action-buttons" },
+                        e("button", { className: "btn btn-secondary btn-sm", onClick: () => { setForm(a); setEditId(a.id); setModal("edit"); } }, "✏️"),
+                        e("button", { className: "btn btn-secondary btn-sm", onClick: () => deleteAsset(a.id) }, "🗑️")
                       )
                     )
                   )
-                )
+                ) : e("tr", null, e("td", { colSpan: 5, style: { textAlign: "center", color: "#6b7280" } }, "No assets added yet"))
               )
-            ) : null,
-
-            // PORTFOLIOS
-            view === "portfolios" ? e(React.Fragment, null,
-              e("div", { style: { display: "flex", justifyContent: "flex-end", marginBottom: 24 } },
-                e("button", { className: "btn btn-primary", onClick: () => { setForm({ name: "", description: "" }); setModal("addPortfolio"); } }, "+ Add Portfolio")
-              ),
-              pSummaries.length > 0 ? pSummaries.map(p =>
-                e("div", { className: "card", key: p.id, style: { padding: 0 } },
-                  e("div", { className: "portfolio-card", onClick: () => setExpanded(expanded === p.id ? null : p.id) },
-                    e("div", null,
-                      e("div", { className: "portfolio-name" }, p.name),
-                      e("div", { className: "portfolio-desc" }, p.description + " • " + p.investments.length + " investments")
-                    ),
-                    e("div", { style: { textAlign: "right" } },
-                      e("div", { style: { fontSize: 11, color: "#9ca3af" } }, "Current Value"),
-                      e("div", { style: { fontSize: 18, fontWeight: 700 } }, fmt(p.current))
-                    ),
-                    e("div", { style: { textAlign: "right" } },
-                      e("div", { style: { fontSize: 11, color: "#9ca3af" } }, "Gain/Loss"),
-                      e("div", { style: { fontSize: 14, fontWeight: 700, color: p.gain >= 0 ? "#10b981" : "#ef4444" } }, fmt(Math.abs(p.gain)) + " (" + fmtPct(p.pct) + ")")
-                    ),
-                    e("div", { className: "portfolio-actions" },
-                      e("button", { className: "btn btn-secondary btn-sm", onClick: e2 => { e2.stopPropagation(); setForm({ id: p.id, name: p.name, description: p.description }); setModal("editPortfolio"); } }, "✏️"),
-                      e("button", { className: "btn btn-secondary btn-sm", onClick: e2 => { e2.stopPropagation(); deletePortfolio(p.id); } }, "🗑️"),
-                      e("button", { className: "btn btn-secondary btn-sm", style: { transform: expanded === p.id ? "rotate(180deg)" : "" } }, "▼")
-                    )
-                  ),
-                  expanded === p.id ? e("div", { style: { borderTop: "1px solid rgba(255,255,255,0.06)", padding: "20px" } },
-                    e("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 16 } },
-                      e("h4", { style: { fontSize: 13, fontWeight: 600, color: "#d1d5db", textTransform: "uppercase" } }, "Investments"),
-                      e("button", { className: "btn-icon", onClick: () => { setActivePort(p.id); setInvestForm({ name: "", category: categories[0] || "", invested: "", current: "", units: "", date: "" }); setModal("addInvestment"); } }, "+ Add")
-                    ),
-                    e("table", null,
-                      e("thead", null,
-                        e("tr", null,
-                          e("th", null, "Name"),
-                          e("th", null, "Category"),
-                          e("th", { className: "text-right" }, "Invested"),
-                          e("th", { className: "text-right" }, "Current"),
-                          e("th", { className: "text-right" }, "Gain"),
-                          e("th", { className: "text-right" }, "Return"),
-                          e("th", { className: "text-right" }, "Actions")
-                        )
-                      ),
-                      e("tbody", null,
-                        p.investments.length > 0 ? p.investments.map(i => {
-                          const g = i.current - i.invested;
-                          const pct = i.invested ? ((g) / i.invested) * 100 : 0;
-                          return e("tr", { key: i.id },
-                            e("td", null, (ICONS[i.category] || "📌") + " " + i.name),
-                            e("td", null, e("span", { className: "badge" }, i.category)),
-                            e("td", { className: "text-right", style: { color: "#9ca3af" } }, fmt(i.invested)),
-                            e("td", { className: "text-right" }, fmt(i.current)),
-                            e("td", { className: `text-right ${g >= 0 ? "text-green" : "text-red"}` }, fmt(g)),
-                            e("td", { className: `text-right ${pct >= 0 ? "text-green" : "text-red"}` }, fmtPct(pct)),
-                            e("td", { className: "text-right" },
-                              e("button", { className: "btn btn-secondary btn-sm", style: { marginRight: 4 }, onClick: () => { setActivePort(p.id); setEditInv(i); setInvestForm({ name: i.name, category: i.category, invested: i.invested, current: i.current, units: i.units, date: i.date }); setModal("editInvestment"); } }, "✏️"),
-                              e("button", { className: "btn btn-secondary btn-sm", onClick: () => deleteInvestment(p.id, i.id) }, "🗑️")
-                            )
-                          );
-                        }) : e("tr", null, e("td", { colSpan: 7, style: { textAlign: "center", color: "#6b7280" } }, "No investments"))
-                      )
-                    )
-                  ) : null
-                )
-              ) : e("div", { className: "empty-state" },
-                e("div", { style: { fontSize: 48 } }, "💼"),
-                e("h3", null, "No Portfolios"),
-                e("p", null, "Create your first portfolio to start"),
-                e("button", { className: "btn btn-primary", onClick: () => { setForm({ name: "", description: "" }); setModal("addPortfolio"); } }, "+ Create Portfolio")
-              )
-            ) : null
+            )
           )
         ),
 
         // MODALS
-        modal === "addPortfolio" ? e("div", { className: "modal show" },
-          e("div", { className: "modal-content", onClick: e2 => e2.stopPropagation() },
+        modal === "add" ? e("div", { className: "modal show" },
+          e("div", { className: "modal-content", onClick: ev => ev.stopPropagation() },
             e("div", { className: "modal-header" },
-              e("h3", { style: { fontSize: 18, fontWeight: 600 } }, "New Portfolio"),
+              e("h3", null, "Add Asset"),
               e("button", { className: "btn btn-secondary btn-sm", onClick: () => setModal(null) }, "✕")
             ),
             e("div", { className: "modal-body" },
               e("div", { className: "form-group" },
-                e("label", { className: "form-label" }, "Portfolio Name"),
-                e("input", { className: "input-field", placeholder: "e.g. Retirement Fund", value: form.name || "", onChange: ev => setForm({ ...form, name: ev.target.value }) })
+                e("label", { className: "form-label" }, "Asset Category"),
+                e("input", { className: "input-field", placeholder: "e.g. Stocks, Gold, Property", value: form.category || "", onChange: ev => setForm({ ...form, category: ev.target.value }) })
               ),
               e("div", { className: "form-group" },
-                e("label", { className: "form-label" }, "Description"),
-                e("input", { className: "input-field", placeholder: "Short description", value: form.description || "", onChange: ev => setForm({ ...form, description: ev.target.value }) })
+                e("label", { className: "form-label" }, "Account / Policy"),
+                e("input", { className: "input-field", placeholder: "e.g. HDFC Account, SBI FD", value: form.account || "", onChange: ev => setForm({ ...form, account: ev.target.value }) })
+              ),
+              e("div", { className: "form-group" },
+                e("label", { className: "form-label" }, "Remarks"),
+                e("input", { className: "input-field", placeholder: "Any notes", value: form.remarks || "", onChange: ev => setForm({ ...form, remarks: ev.target.value }) })
+              ),
+              e("div", { className: "form-group" },
+                e("label", { className: "form-label" }, "Amount (INR)"),
+                e("input", { className: "input-field", type: "number", placeholder: "0", value: form.amount || "", onChange: ev => setForm({ ...form, amount: +ev.target.value }) })
               ),
               e("div", { style: { display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 24 } },
                 e("button", { className: "btn btn-secondary", onClick: () => setModal(null) }, "Cancel"),
-                e("button", { className: "btn btn-primary", onClick: addPortfolio }, "Create")
+                e("button", { className: "btn btn-primary", onClick: addAsset }, "Add Asset")
               )
             )
           )
         ) : null,
 
-        modal === "editPortfolio" ? e("div", { className: "modal show" },
-          e("div", { className: "modal-content", onClick: e2 => e2.stopPropagation() },
+        modal === "edit" ? e("div", { className: "modal show" },
+          e("div", { className: "modal-content", onClick: ev => ev.stopPropagation() },
             e("div", { className: "modal-header" },
-              e("h3", { style: { fontSize: 18, fontWeight: 600 } }, "Edit Portfolio"),
+              e("h3", null, "Edit Asset"),
               e("button", { className: "btn btn-secondary btn-sm", onClick: () => setModal(null) }, "✕")
             ),
             e("div", { className: "modal-body" },
               e("div", { className: "form-group" },
-                e("label", { className: "form-label" }, "Portfolio Name"),
-                e("input", { className: "input-field", value: form.name || "", onChange: ev => setForm({ ...form, name: ev.target.value }) })
+                e("label", { className: "form-label" }, "Asset Category"),
+                e("input", { className: "input-field", value: form.category || "", onChange: ev => setForm({ ...form, category: ev.target.value }) })
               ),
               e("div", { className: "form-group" },
-                e("label", { className: "form-label" }, "Description"),
-                e("input", { className: "input-field", value: form.description || "", onChange: ev => setForm({ ...form, description: ev.target.value }) })
+                e("label", { className: "form-label" }, "Account / Policy"),
+                e("input", { className: "input-field", value: form.account || "", onChange: ev => setForm({ ...form, account: ev.target.value }) })
+              ),
+              e("div", { className: "form-group" },
+                e("label", { className: "form-label" }, "Remarks"),
+                e("input", { className: "input-field", value: form.remarks || "", onChange: ev => setForm({ ...form, remarks: ev.target.value }) })
+              ),
+              e("div", { className: "form-group" },
+                e("label", { className: "form-label" }, "Amount (INR)"),
+                e("input", { className: "input-field", type: "number", value: form.amount || "", onChange: ev => setForm({ ...form, amount: +ev.target.value }) })
               ),
               e("div", { style: { display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 24 } },
                 e("button", { className: "btn btn-secondary", onClick: () => setModal(null) }, "Cancel"),
-                e("button", { className: "btn btn-primary", onClick: updatePortfolio }, "Save")
-              )
-            )
-          )
-        ) : null,
-
-        modal === "addInvestment" ? e("div", { className: "modal show" },
-          e("div", { className: "modal-content", onClick: e2 => e2.stopPropagation() },
-            e("div", { className: "modal-header" },
-              e("h3", { style: { fontSize: 18, fontWeight: 600 } }, "Add Investment"),
-              e("button", { className: "btn btn-secondary btn-sm", onClick: () => setModal(null) }, "✕")
-            ),
-            e("div", { className: "modal-body" },
-              e("div", { className: "form-group" },
-                e("label", { className: "form-label" }, "Investment Name"),
-                e("input", { className: "input-field", placeholder: "e.g. Apple Inc.", value: investForm.name, onChange: ev => setInvestForm({ ...investForm, name: ev.target.value }) })
-              ),
-              e("div", { className: "form-group" },
-                e("label", { className: "form-label" }, "Category (e.g. Stocks, Real Estate, Art, etc.)"),
-                e("input", { className: "input-field", placeholder: "Type any investment type", value: investForm.category, onChange: ev => setInvestForm({ ...investForm, category: ev.target.value }) })
-              ),
-              e("div", { className: "form-row" },
-                e("div", { className: "form-group" },
-                  e("label", { className: "form-label" }, "Amount Invested"),
-                  e("input", { className: "input-field", type: "number", placeholder: "0", value: investForm.invested, onChange: ev => setInvestForm({ ...investForm, invested: ev.target.value }) })
-                ),
-                e("div", { className: "form-group" },
-                  e("label", { className: "form-label" }, "Current Value"),
-                  e("input", { className: "input-field", type: "number", placeholder: "0", value: investForm.current, onChange: ev => setInvestForm({ ...investForm, current: ev.target.value }) })
-                )
-              ),
-              e("div", { className: "form-row" },
-                e("div", { className: "form-group" },
-                  e("label", { className: "form-label" }, "Units/Shares"),
-                  e("input", { className: "input-field", type: "number", placeholder: "0", value: investForm.units, onChange: ev => setInvestForm({ ...investForm, units: ev.target.value }) })
-                ),
-                e("div", { className: "form-group" },
-                  e("label", { className: "form-label" }, "Purchase Date"),
-                  e("input", { className: "input-field", type: "date", value: investForm.date, onChange: ev => setInvestForm({ ...investForm, date: ev.target.value }) })
-                )
-              ),
-              e("div", { style: { display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 24 } },
-                e("button", { className: "btn btn-secondary", onClick: () => setModal(null) }, "Cancel"),
-                e("button", { className: "btn btn-primary", onClick: addInvestment }, "Add")
-              )
-            )
-          )
-        ) : null,
-
-        modal === "editInvestment" ? e("div", { className: "modal show" },
-          e("div", { className: "modal-content", onClick: e2 => e2.stopPropagation() },
-            e("div", { className: "modal-header" },
-              e("h3", { style: { fontSize: 18, fontWeight: 600 } }, "Edit Investment"),
-              e("button", { className: "btn btn-secondary btn-sm", onClick: () => { setModal(null); setEditInv(null); } }, "✕")
-            ),
-            e("div", { className: "modal-body" },
-              e("div", { className: "form-group" },
-                e("label", { className: "form-label" }, "Investment Name"),
-                e("input", { className: "input-field", value: investForm.name, onChange: ev => setInvestForm({ ...investForm, name: ev.target.value }) })
-              ),
-              e("div", { className: "form-group" },
-                e("label", { className: "form-label" }, "Category (e.g. Stocks, Real Estate, Art, etc.)"),
-                e("input", { className: "input-field", placeholder: "Type any investment type", value: investForm.category, onChange: ev => setInvestForm({ ...investForm, category: ev.target.value }) })
-              ),
-              e("div", { className: "form-row" },
-                e("div", { className: "form-group" },
-                  e("label", { className: "form-label" }, "Amount Invested"),
-                  e("input", { className: "input-field", type: "number", value: investForm.invested, onChange: ev => setInvestForm({ ...investForm, invested: ev.target.value }) })
-                ),
-                e("div", { className: "form-group" },
-                  e("label", { className: "form-label" }, "Current Value"),
-                  e("input", { className: "input-field", type: "number", value: investForm.current, onChange: ev => setInvestForm({ ...investForm, current: ev.target.value }) })
-                )
-              ),
-              e("div", { className: "form-row" },
-                e("div", { className: "form-group" },
-                  e("label", { className: "form-label" }, "Units/Shares"),
-                  e("input", { className: "input-field", type: "number", value: investForm.units, onChange: ev => setInvestForm({ ...investForm, units: ev.target.value }) })
-                ),
-                e("div", { className: "form-group" },
-                  e("label", { className: "form-label" }, "Purchase Date"),
-                  e("input", { className: "input-field", type: "date", value: investForm.date, onChange: ev => setInvestForm({ ...investForm, date: ev.target.value }) })
-                )
-              ),
-              e("div", { style: { display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 24 } },
-                e("button", { className: "btn btn-secondary", onClick: () => { setModal(null); setEditInv(null); } }, "Cancel"),
-                e("button", { className: "btn btn-primary", onClick: updateInvestment }, "Save")
-              )
-            )
-          )
-        ) : null,
-
-        modal === "categories" ? e("div", { className: "modal show" },
-          e("div", { className: "modal-content", onClick: e2 => e2.stopPropagation() },
-            e("div", { className: "modal-header" },
-              e("h3", { style: { fontSize: 18, fontWeight: 600 } }, "Manage Categories"),
-              e("button", { className: "btn btn-secondary btn-sm", onClick: () => setModal(null) }, "✕")
-            ),
-            e("div", { className: "modal-body" },
-              e("div", { style: { marginBottom: 16, maxHeight: 256, overflowY: "auto" } },
-                categories.map(cat =>
-                  e("div", { key: cat, style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", borderRadius: 12, background: "rgba(255,255,255,0.04)", marginBottom: 8 } },
-                    e("span", null, (ICONS[cat] || "📌") + " " + cat),
-                    e("button", { className: "btn btn-secondary btn-sm", onClick: () => deleteCategory(cat) }, "🗑️")
-                  )
-                )
-              ),
-              e("div", { style: { display: "flex", gap: 8 } },
-                e("input", { className: "input-field", placeholder: "New category...", value: newCat, onChange: ev => setNewCat(ev.target.value), onKeyDown: ev => ev.key === "Enter" && addCategory(), style: { flex: 1 } }),
-                e("button", { className: "btn btn-primary btn-sm", onClick: addCategory }, "+")
-              ),
-              e("div", { style: { display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 24 } },
-                e("button", { className: "btn btn-primary", onClick: () => setModal(null) }, "Done")
+                e("button", { className: "btn btn-primary", onClick: updateAsset }, "Save Changes")
               )
             )
           )
