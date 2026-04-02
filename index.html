@@ -275,6 +275,45 @@
         setPortfolios(p => p.map(x => x.id === portId ? { ...x, investments: x.investments.filter(i => i.id !== invId) } : x));
       };
 
+      const exportData = () => {
+        const data = JSON.stringify({ portfolios, exportDate: new Date().toISOString() }, null, 2);
+        const blob = new Blob([data], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `wealth-backup-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        alert("✅ Data exported successfully!");
+      };
+
+      const importData = () => {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = ".json";
+        input.onchange = ev => {
+          const file = ev.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = e => {
+            try {
+              const d = JSON.parse(e.target.result);
+              if (d.portfolios && Array.isArray(d.portfolios)) {
+                setPortfolios(d.portfolios);
+                setLastSaved(new Date());
+                alert("✅ Data imported successfully!");
+              } else {
+                alert("❌ Invalid file format.");
+              }
+            } catch (err) {
+              alert("❌ Error importing file.");
+            }
+          };
+          reader.readAsText(file);
+        };
+        input.click();
+      };
+
       const typeBreakdown = Object.entries(stats.byType).map(([type, data]) => ({
         type,
         amount: data.amount,
@@ -295,6 +334,7 @@
             e("div", { className: "header-right" },
               e("span", { className: "timestamp" }, `Saved at ${timeStr}`),
               e("button", { className: "btn btn-secondary btn-sm", onClick: () => window.print() }, "🖨️ Print"),
+              e("button", { className: "btn btn-secondary btn-sm", onClick: () => setModal("backup") }, "📥 Backup"),
               e("button", { className: "btn btn-primary btn-sm", onClick: () => { setForm({ bankName: "", userName: "" }); setEditId(null); setModal("addPortfolio"); } }, "+ Add Portfolio")
             )
           ),
@@ -524,6 +564,36 @@
               e("div", { style: { display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 24 } },
                 e("button", { className: "btn btn-secondary", onClick: () => setModal(null) }, "Cancel"),
                 e("button", { className: "btn btn-primary", onClick: updateInvestment }, "Save Changes")
+              )
+            )
+          )
+        ) : null,
+
+        modal === "backup" ? e("div", { className: "modal show" },
+          e("div", { className: "modal-content", onClick: ev => ev.stopPropagation() },
+            e("div", { className: "modal-header" },
+              e("h3", null, "📥 Backup & Sync Data"),
+              e("button", { className: "btn btn-secondary btn-sm", onClick: () => setModal(null) }, "✕")
+            ),
+            e("div", { className: "modal-body" },
+              e("div", { style: { marginBottom: 24 } },
+                e("h4", { style: { fontSize: 14, fontWeight: 600, marginBottom: 12 } }, "Export Your Data"),
+                e("p", { style: { fontSize: 13, color: "#9ca3af", marginBottom: 16 } },
+                  "Download all your portfolio data as a JSON file. Use this to backup your data or transfer it to another device."
+                ),
+                e("button", { className: "btn btn-primary", onClick: () => { exportData(); setModal(null); } }, "📥 Export Data Now")
+              ),
+              e("div", { style: { borderTop: "1px solid rgba(99,102,241,0.2)", paddingTop: 24 } },
+                e("h4", { style: { fontSize: 14, fontWeight: 600, marginBottom: 12 } }, "Import Data"),
+                e("p", { style: { fontSize: 13, color: "#9ca3af", marginBottom: 16 } },
+                  "Upload a previously exported JSON file to restore your portfolio data. This will replace your current data."
+                ),
+                e("button", { className: "btn btn-secondary", onClick: importData }, "📤 Import Data")
+              ),
+              e("div", { style: { marginTop: 24, padding: 16, background: "rgba(99,102,241,0.1)", borderRadius: 10, borderLeft: "3px solid #6366f1" } },
+                e("p", { style: { fontSize: 12, color: "#d1d5db", lineHeight: "1.6" } },
+                  "💡 Pro Tip: Export your data regularly to keep backups. You can import your data on any device by uploading the JSON file."
+                )
               )
             )
           )
