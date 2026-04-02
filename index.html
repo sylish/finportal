@@ -174,7 +174,41 @@
     const e = React.createElement;
 
     const fmt = n => "₹" + Number(n).toLocaleString("en-IN");
-    const loadData = (key, fallback) => { try { const d = localStorage.getItem(key); return d ? JSON.parse(d) : fallback; } catch { return fallback; } };
+
+    const autoDetectBank = (portfolioName) => {
+      if (!portfolioName) return false;
+      const name = portfolioName.toLowerCase();
+
+      // Non-bank keywords
+      const nonBankKeywords = ["epf", "ppf", "gratuity", "sukanya", "ulip", "gold", "house", "apartment", "car", "two wheeler", "property", "asset", "retirement", "personal", "physical"];
+      if (nonBankKeywords.some(keyword => name.includes(keyword))) return false;
+
+      // Bank keywords
+      const bankKeywords = ["bank", "insurance", "credit", "union", "brokerage", "hdfc", "icici", "axis", "sbi", "federal", "kotak", "yes bank"];
+      if (bankKeywords.some(keyword => name.includes(keyword))) return true;
+
+      // Default: if it has a clear institution name, treat as bank
+      return true;
+    };
+
+    const loadData = (key, fallback) => {
+      try {
+        const d = localStorage.getItem(key);
+        if (!d) return fallback;
+        const parsed = JSON.parse(d);
+
+        // Auto-migrate old data without isBank field
+        if (Array.isArray(parsed)) {
+          return parsed.map(p => ({
+            ...p,
+            isBank: p.isBank !== undefined ? p.isBank : autoDetectBank(p.bankName)
+          }));
+        }
+        return parsed;
+      } catch {
+        return fallback;
+      }
+    };
 
     const investmentTypes = ["Savings Account", "Fixed Deposit", "ULIP", "Mutual Fund", "Stocks", "Employee Provident Fund", "Public Provident Fund", "Sukanya Samridhi", "Gratuity", "Physical Gold", "ETF", "House/Apartment", "Car", "Two Wheeler", "Other"];
 
