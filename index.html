@@ -186,6 +186,13 @@
     .goal-status.behind { background: rgba(245,158,11,0.15); color: #fbbf24; }
     .goal-status.exceeded { background: rgba(139,92,246,0.15); color: #d8b4fe; }
     .goal-actions { display: flex; gap: 6px; margin-top: 12px; }
+    .goal-info-icon { display: inline-block; width: 16px; height: 16px; background: rgba(99,102,241,0.3); border-radius: 50%; text-align: center; line-height: 16px; font-size: 12px; cursor: help; margin-left: 6px; color: #a5b4fc; }
+    .goal-info-icon:hover { background: rgba(99,102,241,0.6); }
+    .goal-remarks { font-size: 12px; color: #9ca3af; margin-top: 8px; padding: 8px; background: rgba(99,102,241,0.08); border-left: 2px solid rgba(99,102,241,0.3); border-radius: 4px; line-height: 1.4; }
+    .next-steps-list { list-style: none; padding: 0; }
+    .next-steps-list li { padding: 6px 0; font-size: 13px; color: #d1d5db; display: flex; gap: 8px; }
+    .next-steps-list li:before { content: "✓"; color: #10b981; font-weight: bold; min-width: 16px; }
+    .modal-body-scroll { max-height: 60vh; overflow-y: auto; }
 
     @media print {
       body { background: white; color: black; }
@@ -349,15 +356,16 @@
       const [portfolioSort, setPortfolioSort] = useState("bankName");
       const [summarySort, setSummarySort] = useState("amount");
       const [goals, setGoals] = useState(() => loadData("wealth_goals_v2", [
-        { id: 1, name: "🎯 Retirement Corpus", category: "Retirement", targetAmount: 10000000, currentAmount: 2065000, targetDate: "2030-12-31" },
-        { id: 2, name: "📚 Adhvika's Education (Sukanya Samriddhi)", category: "Education", targetAmount: 2700000, currentAmount: 1080000, targetDate: "2031-12-31" },
-        { id: 3, name: "🛡️ Insurance Coverage Fund", category: "Emergency", targetAmount: 1500000, currentAmount: 500000, targetDate: "2026-12-31" },
-        { id: 4, name: "💰 Emergency Fund (6-12 months)", category: "Emergency", targetAmount: 1200000, currentAmount: 400000, targetDate: "2025-12-31" },
-        { id: 5, name: "📈 Annual PPF Contributions (Sylish & Adhvika)", category: "Savings", targetAmount: 360000, currentAmount: 180000, targetDate: "2025-12-31" },
-        { id: 6, name: "📊 Annual Mutual Fund SIP", category: "Investment", targetAmount: 1440000, currentAmount: 720000, targetDate: "2025-12-31" }
+        { id: 1, name: "🎯 Retirement Corpus", category: "Retirement", targetAmount: 10000000, currentAmount: 2065000, targetDate: "2030-12-31", remarks: "Your post-retirement living expenses for 25+ years. Critical goal - requires ₹79.6L more in 4 years", nextSteps: ["Increase monthly SIP from ₹1.2L to ₹1.8L", "Allocate 70% to equity funds", "Review and rebalance quarterly", "Target: Save ₹1.99L/month"] },
+        { id: 2, name: "📚 Adhvika's Education (Sukanya Samriddhi)", category: "Education", targetAmount: 2700000, currentAmount: 1080000, targetDate: "2031-12-31", remarks: "Tax-free growth for Adhvika's higher education (college + postgraduate). On track at 40% completion", nextSteps: ["Continue ₹15,000/month contributions", "Maintain till Adhvika turns 21", "Target corpus by 2031: ₹27L", "Review in 2027 based on inflation"] },
+        { id: 3, name: "🛡️ Insurance Coverage Fund", category: "Emergency", targetAmount: 1500000, currentAmount: 500000, targetDate: "2026-12-31", remarks: "Reserve for insurance premiums (SBI, HDFC policies). Covers 3 years of annual premiums", nextSteps: ["Add ₹2.5L/quarter from savings", "Keep in low-risk debt funds", "Review policy premiums yearly", "Allocate surplus funds here"] },
+        { id: 4, name: "💰 Emergency Fund (6-12 months)", category: "Emergency", targetAmount: 1200000, currentAmount: 400000, targetDate: "2025-12-31", remarks: "Covers 6-12 months living expenses. Critical liquidity buffer for emergencies & medical", nextSteps: ["Add ₹20,000/month from salary", "Keep in savings/money market funds", "Target: Complete by Dec 2025", "Maintain as liquid cash buffer"] },
+        { id: 5, name: "📈 Annual PPF Contributions (Sylish & Adhvika)", category: "Savings", targetAmount: 360000, currentAmount: 180000, targetDate: "2025-12-31", remarks: "Tax-free retirement savings. Combined contributions for Sylish (₹1.5L) + Adhvika (₹1.5L) yearly", nextSteps: ["Complete ₹1.5L each by March 2025", "Prioritize before financial year ends", "Set monthly reminder: ₹25,000", "Check PPF interest rates quarterly"] },
+        { id: 6, name: "📊 Annual Mutual Fund SIP", category: "Investment", targetAmount: 1440000, currentAmount: 720000, targetDate: "2025-12-31", remarks: "Growth investments via diversified SIPs. Includes HDFC, Fed Aditya, Fed Nippon, etc.", nextSteps: ["Maintain ₹1.2L/month SIP", "Review fund performance quarterly", "Rebalance if underperforming", "Increase allocation for retirement goal"] }
       ]));
       const [goalForm, setGoalForm] = useState({});
       const [editGoalId, setEditGoalId] = useState(null);
+      const [selectedGoalDetail, setSelectedGoalDetail] = useState(null);
 
       useEffect(() => { localStorage.setItem("wealth_portfolios", JSON.stringify(portfolios)); }, [portfolios]);
       useEffect(() => { localStorage.setItem("wealth_goals_v2", JSON.stringify(goals)); }, [goals]);
@@ -843,6 +851,7 @@
                         e("div", { className: "goal-stat-value" }, new Date(goal.targetDate).toLocaleDateString("en-IN"))
                       )
                     ),
+                    e("div", { className: "goal-remarks" }, goal.remarks),
                     e("div", { className: "goal-status " + goal.status },
                       e("span", null,
                         goal.status === "exceeded" ? "🎉 Goal Achieved!" :
@@ -851,6 +860,7 @@
                       )
                     ),
                     e("div", { className: "goal-actions" },
+                      e("button", { className: "btn btn-secondary btn-sm", onClick: () => setSelectedGoalDetail(goal), style: { flex: 1 } }, "📋 View Details & Next Steps"),
                       e("button", { className: "btn btn-icon btn-sm", onClick: () => { setGoalForm(goal); setEditGoalId(goal.id); setModal("editGoal"); } }, "✏️"),
                       e("button", { className: "btn btn-icon btn-sm", onClick: () => deleteGoal(goal.id) }, "🗑️")
                     )
@@ -1194,6 +1204,63 @@
               e("div", { style: { display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 24 } },
                 e("button", { className: "btn btn-secondary", onClick: () => setModal(null) }, "Cancel"),
                 e("button", { className: "btn btn-primary", onClick: updateGoal }, "Save Changes")
+              )
+            )
+          )
+        ) : null,
+
+        // Goal Details & Next Steps Modal
+        selectedGoalDetail ? e("div", { className: "modal show" },
+          e("div", { className: "modal-content", onClick: ev => ev.stopPropagation() },
+            e("div", { className: "modal-header" },
+              e("h3", null, selectedGoalDetail.name),
+              e("button", { className: "btn btn-secondary btn-sm", onClick: () => setSelectedGoalDetail(null) }, "✕")
+            ),
+            e("div", { className: "modal-body modal-body-scroll" },
+              e("div", { style: { marginBottom: 20 } },
+                e("h4", { style: { fontSize: 14, fontWeight: 600, marginBottom: 8, color: "#d1d5db" } }, "📝 About This Goal"),
+                e("p", { style: { fontSize: 13, color: "#9ca3af", lineHeight: "1.6" } }, selectedGoalDetail.remarks)
+              ),
+              e("div", { style: { marginBottom: 20 } },
+                e("h4", { style: { fontSize: 14, fontWeight: 600, marginBottom: 12, color: "#d1d5db" } }, "📊 Progress Summary"),
+                e("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 } },
+                  e("div", { style: { background: "rgba(99,102,241,0.1)", padding: 12, borderRadius: 8 } },
+                    e("div", { style: { fontSize: 11, color: "#9ca3af", marginBottom: 4 } }, "Current Amount"),
+                    e("div", { style: { fontSize: 16, fontWeight: 600, color: "#a5b4fc" } }, fmt(selectedGoalDetail.currentAmount))
+                  ),
+                  e("div", { style: { background: "rgba(99,102,241,0.1)", padding: 12, borderRadius: 8 } },
+                    e("div", { style: { fontSize: 11, color: "#9ca3af", marginBottom: 4 } }, "Target Amount"),
+                    e("div", { style: { fontSize: 16, fontWeight: 600, color: "#a5b4fc" } }, fmt(selectedGoalDetail.targetAmount))
+                  ),
+                  e("div", { style: { background: "rgba(16,185,129,0.1)", padding: 12, borderRadius: 8 } },
+                    e("div", { style: { fontSize: 11, color: "#9ca3af", marginBottom: 4 } }, "Remaining"),
+                    e("div", { style: { fontSize: 16, fontWeight: 600, color: "#6ee7b7" } }, fmt(selectedGoalDetail.remaining))
+                  ),
+                  e("div", { style: { background: "rgba(99,102,241,0.1)", padding: 12, borderRadius: 8 } },
+                    e("div", { style: { fontSize: 11, color: "#9ca3af", marginBottom: 4 } }, "Monthly Needed"),
+                    e("div", { style: { fontSize: 16, fontWeight: 600, color: "#a5b4fc" } }, fmt(Math.max(selectedGoalDetail.remaining / Math.max(selectedGoalDetail.monthsLeft, 1), 0)))
+                  )
+                )
+              ),
+              e("div", null,
+                e("h4", { style: { fontSize: 14, fontWeight: 600, marginBottom: 12, color: "#d1d5db" } }, "✅ Next Steps Required"),
+                e("ul", { className: "next-steps-list" },
+                  selectedGoalDetail.nextSteps.map((step, idx) =>
+                    e("li", { key: idx }, step)
+                  )
+                )
+              ),
+              e("div", { style: { marginTop: 24, padding: 16, background: "rgba(99,102,241,0.08)", borderRadius: 8, borderLeft: "3px solid rgba(99,102,241,0.5)" } },
+                e("div", { style: { fontSize: 12, color: "#d1d5db", marginBottom: 8 } }, "💡 Recommendation:"),
+                e("div", { style: { fontSize: 12, color: "#9ca3af", lineHeight: "1.5" } },
+                  selectedGoalDetail.status === "behind" ? "⚠️ You're behind schedule. Increase monthly contributions to stay on track." :
+                  selectedGoalDetail.status === "exceeded" ? "🎉 Congratulations! You've exceeded this goal. Consider reducing contributions or moving surplus to another goal." :
+                  "✅ You're on track! Maintain your current contributions to meet this goal on time."
+                )
+              ),
+              e("div", { style: { display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 24 } },
+                e("button", { className: "btn btn-secondary", onClick: () => setSelectedGoalDetail(null) }, "Close"),
+                e("button", { className: "btn btn-primary", onClick: () => { setGoalForm(selectedGoalDetail); setEditGoalId(selectedGoalDetail.id); setSelectedGoalDetail(null); setModal("editGoal"); } }, "✏️ Edit Goal")
               )
             )
           )
