@@ -337,7 +337,17 @@
           return { ...p, total: portTotal };
         })];
 
-        if (portfolioSort === "bankName") sorted.sort((a, b) => a.bankName.localeCompare(b.bankName));
+        if (portfolioSort === "bankName") {
+          // Separate banks from non-banks
+          const banks = sorted.filter(p => p.bankName && p.bankName.trim() !== "");
+          const nonBanks = sorted.filter(p => !p.bankName || p.bankName.trim() === "");
+
+          // Sort banks alphabetically, non-banks go last
+          banks.sort((a, b) => a.bankName.localeCompare(b.bankName));
+          nonBanks.sort((a, b) => (a.bankName || "").localeCompare(b.bankName || ""));
+
+          sorted = [...banks, ...nonBanks];
+        }
         else if (portfolioSort === "userName") sorted.sort((a, b) => a.userName.localeCompare(b.userName));
         else if (portfolioSort === "amount") sorted.sort((a, b) => b.total - a.total);
 
