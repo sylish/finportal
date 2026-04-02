@@ -339,17 +339,23 @@
 
         if (portfolioSort === "bankName") {
           // Separate banks from non-banks
-          const banks = sorted.filter(p => p.bankName && p.bankName.trim() !== "");
-          const nonBanks = sorted.filter(p => !p.bankName || p.bankName.trim() === "");
+          const banks = sorted.filter(p => p.bankName && String(p.bankName).trim() !== "");
+          const nonBanks = sorted.filter(p => !p.bankName || String(p.bankName).trim() === "");
 
-          // Sort banks alphabetically, non-banks go last
-          banks.sort((a, b) => a.bankName.localeCompare(b.bankName));
-          nonBanks.sort((a, b) => (a.bankName || "").localeCompare(b.bankName || ""));
+          // Sort banks alphabetically
+          banks.sort((a, b) => String(a.bankName || "").localeCompare(String(b.bankName || "")));
+          // Sort non-banks by user name
+          nonBanks.sort((a, b) => String(a.userName || "").localeCompare(String(b.userName || "")));
 
+          // Combine: banks first, then non-banks
           sorted = [...banks, ...nonBanks];
         }
-        else if (portfolioSort === "userName") sorted.sort((a, b) => a.userName.localeCompare(b.userName));
-        else if (portfolioSort === "amount") sorted.sort((a, b) => b.total - a.total);
+        else if (portfolioSort === "userName") {
+          sorted.sort((a, b) => String(a.userName || "").localeCompare(String(b.userName || "")));
+        }
+        else if (portfolioSort === "amount") {
+          sorted.sort((a, b) => b.total - a.total);
+        }
 
         return sorted;
       }, [portfolios, portfolioSort]);
