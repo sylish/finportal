@@ -348,7 +348,7 @@
       const [lastSaved, setLastSaved] = useState(new Date());
       const [portfolioSort, setPortfolioSort] = useState("bankName");
       const [summarySort, setSummarySort] = useState("amount");
-      const [goals, setGoals] = useState(() => loadData("wealth_goals", [
+      const [goals, setGoals] = useState(() => loadData("wealth_goals_v2", [
         { id: 1, name: "🎯 Retirement Corpus", category: "Retirement", targetAmount: 10000000, currentAmount: 2065000, targetDate: "2030-12-31" },
         { id: 2, name: "📚 Adhvika's Education (Sukanya Samriddhi)", category: "Education", targetAmount: 2700000, currentAmount: 1080000, targetDate: "2031-12-31" },
         { id: 3, name: "🛡️ Insurance Coverage Fund", category: "Emergency", targetAmount: 1500000, currentAmount: 500000, targetDate: "2026-12-31" },
@@ -360,7 +360,7 @@
       const [editGoalId, setEditGoalId] = useState(null);
 
       useEffect(() => { localStorage.setItem("wealth_portfolios", JSON.stringify(portfolios)); }, [portfolios]);
-      useEffect(() => { localStorage.setItem("wealth_goals", JSON.stringify(goals)); }, [goals]);
+      useEffect(() => { localStorage.setItem("wealth_goals_v2", JSON.stringify(goals)); }, [goals]);
 
       const stats = useMemo(() => {
         const allInvestments = portfolios.flatMap(p => p.investments);
