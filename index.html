@@ -349,9 +349,12 @@
       const [portfolioSort, setPortfolioSort] = useState("bankName");
       const [summarySort, setSummarySort] = useState("amount");
       const [goals, setGoals] = useState(() => loadData("wealth_goals", [
-        { id: 1, name: "Emergency Fund", category: "Emergency", targetAmount: 500000, currentAmount: 85000, targetDate: "2025-12-31" },
-        { id: 2, name: "House Down Payment", category: "Savings", targetAmount: 1000000, currentAmount: 600000, targetDate: "2026-06-30" },
-        { id: 3, name: "Retirement Fund", category: "Retirement", targetAmount: 5000000, currentAmount: 3450000, targetDate: "2030-12-31" }
+        { id: 1, name: "🎯 Retirement Corpus", category: "Retirement", targetAmount: 10000000, currentAmount: 2065000, targetDate: "2030-12-31" },
+        { id: 2, name: "📚 Adhvika's Education (Sukanya Samriddhi)", category: "Education", targetAmount: 2700000, currentAmount: 1080000, targetDate: "2031-12-31" },
+        { id: 3, name: "🛡️ Insurance Coverage Fund", category: "Emergency", targetAmount: 1500000, currentAmount: 500000, targetDate: "2026-12-31" },
+        { id: 4, name: "💰 Emergency Fund (6-12 months)", category: "Emergency", targetAmount: 1200000, currentAmount: 400000, targetDate: "2025-12-31" },
+        { id: 5, name: "📈 Annual PPF Contributions (Sylish & Adhvika)", category: "Savings", targetAmount: 360000, currentAmount: 180000, targetDate: "2025-12-31" },
+        { id: 6, name: "📊 Annual Mutual Fund SIP", category: "Investment", targetAmount: 1440000, currentAmount: 720000, targetDate: "2025-12-31" }
       ]));
       const [goalForm, setGoalForm] = useState({});
       const [editGoalId, setEditGoalId] = useState(null);
