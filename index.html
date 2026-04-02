@@ -271,18 +271,41 @@
       return typeMap[type] || type;
     };
 
+    const goalDefaults = {
+      1: { remarks: "Your post-retirement living expenses for 25+ years. Critical goal - requires ₹79.6L more in 4 years", nextSteps: ["Increase monthly SIP from ₹1.2L to ₹1.8L", "Allocate 70% to equity funds", "Review and rebalance quarterly", "Target: Save ₹1.99L/month"] },
+      2: { remarks: "Tax-free growth for Adhvika's higher education (college + postgraduate). On track at 40% completion", nextSteps: ["Continue ₹15,000/month contributions", "Maintain till Adhvika turns 21", "Target corpus by 2031: ₹27L", "Review in 2027 based on inflation"] },
+      3: { remarks: "Reserve for insurance premiums (SBI, HDFC policies). Covers 3 years of annual premiums", nextSteps: ["Add ₹2.5L/quarter from savings", "Keep in low-risk debt funds", "Review policy premiums yearly", "Allocate surplus funds here"] },
+      4: { remarks: "Covers 6-12 months living expenses. Critical liquidity buffer for emergencies & medical", nextSteps: ["Add ₹20,000/month from salary", "Keep in savings/money market funds", "Target: Complete by Dec 2025", "Maintain as liquid cash buffer"] },
+      5: { remarks: "Tax-free retirement savings. Combined contributions for Sylish (₹1.5L) + Adhvika (₹1.5L) yearly", nextSteps: ["Complete ₹1.5L each by March 2025", "Prioritize before financial year ends", "Set monthly reminder: ₹25,000", "Check PPF interest rates quarterly"] },
+      6: { remarks: "Growth investments via diversified SIPs. Includes HDFC, Fed Aditya, Fed Nippon, etc.", nextSteps: ["Maintain ₹1.2L/month SIP", "Review fund performance quarterly", "Rebalance if underperforming", "Increase allocation for retirement goal"] }
+    };
+
     const loadData = (key, fallback) => {
       try {
         const d = localStorage.getItem(key);
         if (!d) return fallback;
         const parsed = JSON.parse(d);
 
-        // Auto-migrate old data without isBank field
+        // Auto-migrate old data
         if (Array.isArray(parsed)) {
-          return parsed.map(p => ({
-            ...p,
-            isBank: p.isBank !== undefined ? p.isBank : autoDetectBank(p.bankName)
-          }));
+          return parsed.map(p => {
+            // For portfolios: add isBank field
+            if (p.bankName !== undefined) {
+              return {
+                ...p,
+                isBank: p.isBank !== undefined ? p.isBank : autoDetectBank(p.bankName)
+              };
+            }
+            // For goals: add remarks and nextSteps
+            if (p.targetAmount !== undefined) {
+              return {
+                ...p,
+                remarks: p.remarks || (goalDefaults[p.id] ? goalDefaults[p.id].remarks : ""),
+                nextSteps: p.nextSteps || (goalDefaults[p.id] ? goalDefaults[p.id].nextSteps : [])
+              };
+            }
+            return p;
+          });
         }
         return parsed;
       } catch {
