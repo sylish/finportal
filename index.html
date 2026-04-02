@@ -163,6 +163,30 @@
     .net-worth-amount { font-size: 36px; font-weight: 700; background: linear-gradient(135deg, #6366f1, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
     .net-worth-sub { font-size: 12px; color: #6b7280; margin-top: 8px; }
 
+    .goals-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .goal-card { background: linear-gradient(145deg, rgba(30,27,75,0.5), rgba(15,23,42,0.5)); border: 1px solid rgba(99,102,241,0.3); border-radius: 14px; padding: 20px; transition: all 0.3s; }
+    .goal-card:hover { border-color: rgba(99,102,241,0.5); transform: translateY(-2px); }
+    .goal-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px; }
+    .goal-name { font-size: 16px; font-weight: 600; color: #fff; }
+    .goal-category { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 10px; background: rgba(99,102,241,0.2); color: #a5b4fc; text-transform: uppercase; }
+    .goal-progress-section { margin-bottom: 16px; }
+    .goal-progress-label { display: flex; justify-content: space-between; font-size: 12px; color: #9ca3af; margin-bottom: 8px; }
+    .goal-progress-value { font-weight: 600; color: #a5b4fc; }
+    .goal-progress-bar { height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
+    .goal-progress-fill { height: 100%; background: linear-gradient(90deg, #6366f1, #8b5cf6); border-radius: 4px; transition: width 0.3s; }
+    .goal-progress-fill.on-track { background: linear-gradient(90deg, #10b981, #34d399); }
+    .goal-progress-fill.behind { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .goal-progress-fill.exceeded { background: linear-gradient(90deg, #8b5cf6, #d946ef); }
+    .goal-stats { display: flex; gap: 16px; font-size: 12px; }
+    .goal-stat { flex: 1; }
+    .goal-stat-label { color: #9ca3af; margin-bottom: 2px; }
+    .goal-stat-value { font-size: 14px; font-weight: 600; color: #fff; }
+    .goal-status { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 8px; border-radius: 6px; margin-top: 12px; }
+    .goal-status.on-track { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+    .goal-status.behind { background: rgba(245,158,11,0.15); color: #fbbf24; }
+    .goal-status.exceeded { background: rgba(139,92,246,0.15); color: #d8b4fe; }
+    .goal-actions { display: flex; gap: 6px; margin-top: 12px; }
+
     @media print {
       body { background: white; color: black; }
       .header-right { display: none; }
@@ -313,8 +337,16 @@
       const [lastSaved, setLastSaved] = useState(new Date());
       const [portfolioSort, setPortfolioSort] = useState("bankName");
       const [summarySort, setSummarySort] = useState("amount");
+      const [goals, setGoals] = useState(() => loadData("wealth_goals", [
+        { id: 1, name: "Emergency Fund", category: "Emergency", targetAmount: 500000, currentAmount: 85000, targetDate: "2025-12-31" },
+        { id: 2, name: "House Down Payment", category: "Savings", targetAmount: 1000000, currentAmount: 600000, targetDate: "2026-06-30" },
+        { id: 3, name: "Retirement Fund", category: "Retirement", targetAmount: 5000000, currentAmount: 3450000, targetDate: "2030-12-31" }
+      ]));
+      const [goalForm, setGoalForm] = useState({});
+      const [editGoalId, setEditGoalId] = useState(null);
 
       useEffect(() => { localStorage.setItem("wealth_portfolios", JSON.stringify(portfolios)); }, [portfolios]);
+      useEffect(() => { localStorage.setItem("wealth_goals", JSON.stringify(goals)); }, [goals]);
 
       const stats = useMemo(() => {
         const allInvestments = portfolios.flatMap(p => p.investments);
@@ -424,6 +456,34 @@
         }
       }, [stats, analytics]);
 
+      // Goal progress calculations for Phase 3
+      const goalProgress = useMemo(() => {
+        return goals.map(goal => {
+          const progress = (goal.currentAmount / goal.targetAmount) * 100;
+          const remaining = goal.targetAmount - goal.currentAmount;
+          const targetDate = new Date(goal.targetDate);
+          const today = new Date();
+          const daysLeft = Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24));
+          const monthsLeft = Math.ceil(daysLeft / 30);
+          const yearsLeft = Math.ceil(daysLeft / 365);
+
+          let status = "on-track";
+          if (progress >= 100) status = "exceeded";
+          else if (daysLeft < 0) status = "behind";
+
+          return {
+            ...goal,
+            progress: Math.min(progress, 100),
+            progressPct: progress.toFixed(1),
+            remaining,
+            daysLeft,
+            monthsLeft,
+            yearsLeft,
+            status
+          };
+        });
+      }, [goals]);
+
       const addPortfolio = () => {
         if (!form.userName) return;
         if (form.isBank && !form.bankName) return;
@@ -466,6 +526,30 @@
 
       const deleteInvestment = (portId, invId) => {
         setPortfolios(p => p.map(x => x.id === portId ? { ...x, investments: x.investments.filter(i => i.id !== invId) } : x));
+      };
+
+      // Goal functions for Phase 3
+      const addGoal = () => {
+        if (!goalForm.name || !goalForm.targetAmount || !goalForm.targetDate) return;
+        setGoals(g => [...g, { id: Date.now(), ...goalForm, currentAmount: goalForm.currentAmount || 0 }]);
+        setGoalForm({});
+        setModal(null);
+        setLastSaved(new Date());
+      };
+
+      const updateGoal = () => {
+        setGoals(g => g.map(x => x.id === editGoalId ? { ...x, ...goalForm } : x));
+        setGoalForm({});
+        setEditGoalId(null);
+        setModal(null);
+        setLastSaved(new Date());
+      };
+
+      const deleteGoal = id => {
+        if (confirm("Delete this goal?")) {
+          setGoals(g => g.filter(x => x.id !== id));
+          setLastSaved(new Date());
+        }
       };
 
       const exportData = () => {
@@ -701,6 +785,62 @@
                 e("div", { className: "stat-label" }, "💼 Portfolio Count"),
                 e("div", { className: "stat-value" }, analytics.portfolioCount),
                 e("div", { className: "stat-sub" }, "Total accounts")
+              )
+            )
+          ),
+
+          // GOALS DASHBOARD - Phase 3
+          e("div", null,
+            e("div", { className: "section" },
+              e("div", { className: "section-header" },
+                e("h2", { className: "section-title" }, "🎯 Financial Goals & Milestones"),
+                e("button", { className: "btn btn-primary btn-sm", onClick: () => { setGoalForm({ category: "Savings", currentAmount: 0 }); setEditGoalId(null); setModal("addGoal"); } }, "+ Add Goal")
+              ),
+              e("div", { className: "goals-grid" },
+                goalProgress.length > 0 ? goalProgress.map(goal =>
+                  e("div", { className: "goal-card", key: goal.id },
+                    e("div", { className: "goal-header" },
+                      e("div", null,
+                        e("div", { className: "goal-name" }, goal.name),
+                        e("span", { className: "goal-category" }, goal.category)
+                      )
+                    ),
+                    e("div", { className: "goal-progress-section" },
+                      e("div", { className: "goal-progress-label" },
+                        e("span", null, goal.progressPct + "% Complete"),
+                        e("span", { className: "goal-progress-value" }, fmt(goal.currentAmount) + " / " + fmt(goal.targetAmount))
+                      ),
+                      e("div", { className: "goal-progress-bar" },
+                        e("div", { className: "goal-progress-fill " + goal.status, style: { width: goal.progress + "%" } })
+                      )
+                    ),
+                    e("div", { className: "goal-stats" },
+                      e("div", { className: "goal-stat" },
+                        e("div", { className: "goal-stat-label" }, "Remaining"),
+                        e("div", { className: "goal-stat-value" }, fmt(goal.remaining))
+                      ),
+                      e("div", { className: "goal-stat" },
+                        e("div", { className: "goal-stat-label" }, "Time Left"),
+                        e("div", { className: "goal-stat-value" }, goal.daysLeft < 0 ? "Overdue" : goal.yearsLeft > 0 ? goal.yearsLeft + "y" : goal.monthsLeft > 0 ? goal.monthsLeft + "m" : goal.daysLeft + "d")
+                      ),
+                      e("div", { className: "goal-stat" },
+                        e("div", { className: "goal-stat-label" }, "Target Date"),
+                        e("div", { className: "goal-stat-value" }, new Date(goal.targetDate).toLocaleDateString("en-IN"))
+                      )
+                    ),
+                    e("div", { className: "goal-status " + goal.status },
+                      e("span", null,
+                        goal.status === "exceeded" ? "🎉 Goal Achieved!" :
+                        goal.status === "behind" ? "⚠️ Behind Schedule" :
+                        "✅ On Track"
+                      )
+                    ),
+                    e("div", { className: "goal-actions" },
+                      e("button", { className: "btn btn-icon btn-sm", onClick: () => { setGoalForm(goal); setEditGoalId(goal.id); setModal("editGoal"); } }, "✏️"),
+                      e("button", { className: "btn btn-icon btn-sm", onClick: () => deleteGoal(goal.id) }, "🗑️")
+                    )
+                  )
+                ) : e("div", { style: { padding: "40px", textAlign: "center", color: "#6b7280" } }, "No goals yet. Create your first goal to start tracking! 🎯")
               )
             )
           ),
@@ -949,6 +1089,96 @@
                 e("p", { style: { fontSize: 12, color: "#d1d5db", lineHeight: "1.6" } },
                   "💡 Pro Tip: Export your data regularly to keep backups. You can import your data on any device by uploading the JSON file."
                 )
+              )
+            )
+          )
+        ) : null,
+
+        // Add Goal Modal
+        modal === "addGoal" ? e("div", { className: "modal show" },
+          e("div", { className: "modal-content", onClick: ev => ev.stopPropagation() },
+            e("div", { className: "modal-header" },
+              e("h3", null, "Add Financial Goal"),
+              e("button", { className: "btn btn-secondary btn-sm", onClick: () => setModal(null) }, "✕")
+            ),
+            e("div", { className: "modal-body" },
+              e("div", { className: "form-group" },
+                e("label", { className: "form-label" }, "Goal Name *"),
+                e("input", { className: "input-field", placeholder: "e.g. House Down Payment, Retirement, Emergency Fund", value: goalForm.name || "", onChange: ev => setGoalForm({ ...goalForm, name: ev.target.value }) })
+              ),
+              e("div", { className: "form-group" },
+                e("label", { className: "form-label" }, "Category"),
+                e("select", { className: "input-field", value: goalForm.category || "Savings", onChange: ev => setGoalForm({ ...goalForm, category: ev.target.value }) },
+                  e("option", { value: "Savings" }, "Savings"),
+                  e("option", { value: "Retirement" }, "Retirement"),
+                  e("option", { value: "Education" }, "Education"),
+                  e("option", { value: "Emergency" }, "Emergency Fund"),
+                  e("option", { value: "Investment" }, "Investment"),
+                  e("option", { value: "Other" }, "Other")
+                )
+              ),
+              e("div", { className: "form-row" },
+                e("div", { className: "form-group" },
+                  e("label", { className: "form-label" }, "Target Amount (₹) *"),
+                  e("input", { className: "input-field", type: "number", placeholder: "0", value: goalForm.targetAmount || "", onChange: ev => setGoalForm({ ...goalForm, targetAmount: +ev.target.value }) })
+                ),
+                e("div", { className: "form-group" },
+                  e("label", { className: "form-label" }, "Current Amount (₹)"),
+                  e("input", { className: "input-field", type: "number", placeholder: "0", value: goalForm.currentAmount || 0, onChange: ev => setGoalForm({ ...goalForm, currentAmount: +ev.target.value }) })
+                )
+              ),
+              e("div", { className: "form-group" },
+                e("label", { className: "form-label" }, "Target Date *"),
+                e("input", { className: "input-field", type: "date", value: goalForm.targetDate || "", onChange: ev => setGoalForm({ ...goalForm, targetDate: ev.target.value }) })
+              ),
+              e("div", { style: { display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 24 } },
+                e("button", { className: "btn btn-secondary", onClick: () => setModal(null) }, "Cancel"),
+                e("button", { className: "btn btn-primary", onClick: addGoal }, "Add Goal")
+              )
+            )
+          )
+        ) : null,
+
+        // Edit Goal Modal
+        modal === "editGoal" ? e("div", { className: "modal show" },
+          e("div", { className: "modal-content", onClick: ev => ev.stopPropagation() },
+            e("div", { className: "modal-header" },
+              e("h3", null, "Edit Goal"),
+              e("button", { className: "btn btn-secondary btn-sm", onClick: () => setModal(null) }, "✕")
+            ),
+            e("div", { className: "modal-body" },
+              e("div", { className: "form-group" },
+                e("label", { className: "form-label" }, "Goal Name"),
+                e("input", { className: "input-field", value: goalForm.name || "", onChange: ev => setGoalForm({ ...goalForm, name: ev.target.value }) })
+              ),
+              e("div", { className: "form-group" },
+                e("label", { className: "form-label" }, "Category"),
+                e("select", { className: "input-field", value: goalForm.category || "Savings", onChange: ev => setGoalForm({ ...goalForm, category: ev.target.value }) },
+                  e("option", { value: "Savings" }, "Savings"),
+                  e("option", { value: "Retirement" }, "Retirement"),
+                  e("option", { value: "Education" }, "Education"),
+                  e("option", { value: "Emergency" }, "Emergency Fund"),
+                  e("option", { value: "Investment" }, "Investment"),
+                  e("option", { value: "Other" }, "Other")
+                )
+              ),
+              e("div", { className: "form-row" },
+                e("div", { className: "form-group" },
+                  e("label", { className: "form-label" }, "Target Amount (₹)"),
+                  e("input", { className: "input-field", type: "number", value: goalForm.targetAmount || "", onChange: ev => setGoalForm({ ...goalForm, targetAmount: +ev.target.value }) })
+                ),
+                e("div", { className: "form-group" },
+                  e("label", { className: "form-label" }, "Current Amount (₹)"),
+                  e("input", { className: "input-field", type: "number", value: goalForm.currentAmount || 0, onChange: ev => setGoalForm({ ...goalForm, currentAmount: +ev.target.value }) })
+                )
+              ),
+              e("div", { className: "form-group" },
+                e("label", { className: "form-label" }, "Target Date"),
+                e("input", { className: "input-field", type: "date", value: goalForm.targetDate || "", onChange: ev => setGoalForm({ ...goalForm, targetDate: ev.target.value }) })
+              ),
+              e("div", { style: { display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 24 } },
+                e("button", { className: "btn btn-secondary", onClick: () => setModal(null) }, "Cancel"),
+                e("button", { className: "btn btn-primary", onClick: updateGoal }, "Save Changes")
               )
             )
           )
