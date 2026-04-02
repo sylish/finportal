@@ -207,6 +207,28 @@
       return true;
     };
 
+    // Investment calculation helpers for Phase 2
+    const calculateInvestmentAge = (purchaseDate) => {
+      if (!purchaseDate) return { value: 0, unit: "days" };
+      const purchase = new Date(purchaseDate);
+      const today = new Date();
+      const diffMs = today - purchase;
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const diffMonths = Math.floor(diffDays / 30);
+      const diffYears = Math.floor(diffDays / 365);
+
+      if (diffYears > 0) return { value: diffYears, unit: diffYears === 1 ? "year" : "years" };
+      if (diffMonths > 0) return { value: diffMonths, unit: diffMonths === 1 ? "month" : "months" };
+      return { value: diffDays, unit: diffDays === 1 ? "day" : "days" };
+    };
+
+    const calculateReturns = (currentAmount, costBasis) => {
+      if (!costBasis || costBasis === 0) return { gain: 0, roi: 0 };
+      const gain = currentAmount - costBasis;
+      const roi = (gain / costBasis) * 100;
+      return { gain, roi };
+    };
+
     const loadData = (key, fallback) => {
       try {
         const d = localStorage.getItem(key);
@@ -235,8 +257,8 @@
         bankName: "SBI Bank",
         userName: "Sylish Kumar",
         investments: [
-          { id: 1, type: "Savings Account", name: "Primary Savings", amount: 85000 },
-          { id: 2, type: "Fixed Deposit", name: "3-Year FD", amount: 600000 }
+          { id: 1, type: "Savings Account", name: "Primary Savings", amount: 85000, costBasis: 85000, purchaseDate: "2023-01-15" },
+          { id: 2, type: "Fixed Deposit", name: "3-Year FD", amount: 600000, costBasis: 550000, purchaseDate: "2022-06-20" }
         ]
       },
       {
@@ -245,8 +267,8 @@
         bankName: "HDFC Bank",
         userName: "Sylish Kumar",
         investments: [
-          { id: 1, type: "Mutual Fund", name: "HDFC Equity Fund", amount: 200000 },
-          { id: 2, type: "Stocks", name: "Blue Chip Stocks", amount: 2550000 }
+          { id: 1, type: "Mutual Fund", name: "HDFC Equity Fund", amount: 200000, costBasis: 150000, purchaseDate: "2021-03-10" },
+          { id: 2, type: "Stocks", name: "Blue Chip Stocks", amount: 2550000, costBasis: 2000000, purchaseDate: "2020-11-05" }
         ]
       },
       {
@@ -255,7 +277,7 @@
         bankName: "ICICI Insurance",
         userName: "Sylish Kumar",
         investments: [
-          { id: 1, type: "ULIP", name: "ICICI ULIPs", amount: 340000 }
+          { id: 1, type: "ULIP", name: "ICICI ULIPs", amount: 340000, costBasis: 300000, purchaseDate: "2021-07-22" }
         ]
       },
       {
@@ -264,7 +286,7 @@
         bankName: "Employee Provident Fund",
         userName: "Sylish Kumar",
         investments: [
-          { id: 1, type: "Employee Provident Fund", name: "EPF Account", amount: 450000 }
+          { id: 1, type: "Employee Provident Fund", name: "EPF Account", amount: 450000, costBasis: 420000, purchaseDate: "2019-04-01" }
         ]
       },
       {
@@ -273,8 +295,8 @@
         bankName: "Physical Assets",
         userName: "Personal",
         investments: [
-          { id: 1, type: "Physical Gold", name: "Gold Ornaments", amount: 150000 },
-          { id: 2, type: "House/Apartment", name: "Residential Property", amount: 3500000 }
+          { id: 1, type: "Physical Gold", name: "Gold Ornaments", amount: 150000, costBasis: 120000, purchaseDate: "2022-02-14" },
+          { id: 2, type: "House/Apartment", name: "Residential Property", amount: 3500000, costBasis: 2800000, purchaseDate: "2018-09-30" }
         ]
       }
     ];
@@ -714,24 +736,36 @@
                         e("tr", null,
                           e("th", null, "Investment Name"),
                           e("th", null, "Type"),
-                          e("th", { className: "text-right" }, "Amount (₹)"),
+                          e("th", { className: "text-right" }, "Current (₹)"),
+                          e("th", { className: "text-right" }, "Cost (₹)"),
+                          e("th", null, "Age"),
+                          e("th", { className: "text-right" }, "Gain/Loss (₹)"),
+                          e("th", { className: "text-right" }, "ROI %"),
                           e("th", null, "Actions")
                         )
                       ),
                       e("tbody", null,
-                        portfolio.investments.length > 0 ? portfolio.investments.map(inv =>
-                          e("tr", { key: inv.id },
+                        portfolio.investments.length > 0 ? portfolio.investments.map(inv => {
+                          const age = calculateInvestmentAge(inv.purchaseDate);
+                          const returns = calculateReturns(inv.amount || 0, inv.costBasis || 0);
+                          const gainColor = returns.gain >= 0 ? "#10b981" : "#ef4444";
+
+                          return e("tr", { key: inv.id },
                             e("td", null, inv.name),
                             e("td", null, e("span", { className: "badge" }, inv.type)),
-                            e("td", { className: "text-right" }, fmt(inv.amount)),
+                            e("td", { className: "text-right" }, fmt(inv.amount || 0)),
+                            e("td", { className: "text-right" }, fmt(inv.costBasis || 0)),
+                            e("td", null, age.value + " " + age.unit),
+                            e("td", { className: "text-right", style: { color: gainColor, fontWeight: 600 } }, fmt(returns.gain)),
+                            e("td", { className: "text-right", style: { color: gainColor, fontWeight: 600 } }, returns.roi.toFixed(2) + "%"),
                             e("td", null,
                               e("div", { className: "actions" },
                                 e("button", { className: "btn btn-icon btn-sm", onClick: ev => { ev.stopPropagation(); setActivePortfolioId(portfolio.id); setInvestForm(inv); setEditInvId(inv.id); setModal("editInvestment"); } }, "✏️"),
                                 e("button", { className: "btn btn-icon btn-sm", onClick: ev => { ev.stopPropagation(); deleteInvestment(portfolio.id, inv.id); } }, "🗑️")
                               )
                             )
-                          )
-                        ) : e("tr", null, e("td", { colSpan: 4, style: { textAlign: "center", color: "#6b7280", padding: "16px" } }, "No investments"))
+                          );
+                        }) : e("tr", null, e("td", { colSpan: 8, style: { textAlign: "center", color: "#6b7280", padding: "16px" } }, "No investments"))
                       )
                     ),
                     e("div", { style: { display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 } },
@@ -829,9 +863,19 @@
                   investmentTypes.map(t => e("option", { key: t, value: t }, t))
                 )
               ),
+              e("div", { className: "form-row" },
+                e("div", { className: "form-group" },
+                  e("label", { className: "form-label" }, "Current Amount (₹)"),
+                  e("input", { className: "input-field", type: "number", placeholder: "0", value: investForm.amount || "", onChange: ev => setInvestForm({ ...investForm, amount: +ev.target.value }) })
+                ),
+                e("div", { className: "form-group" },
+                  e("label", { className: "form-label" }, "Cost Basis (₹)"),
+                  e("input", { className: "input-field", type: "number", placeholder: "What you paid", value: investForm.costBasis || "", onChange: ev => setInvestForm({ ...investForm, costBasis: +ev.target.value }) })
+                )
+              ),
               e("div", { className: "form-group" },
-                e("label", { className: "form-label" }, "Amount (₹)"),
-                e("input", { className: "input-field", type: "number", placeholder: "0", value: investForm.amount || "", onChange: ev => setInvestForm({ ...investForm, amount: +ev.target.value }) })
+                e("label", { className: "form-label" }, "Purchase Date"),
+                e("input", { className: "input-field", type: "date", value: investForm.purchaseDate || "", onChange: ev => setInvestForm({ ...investForm, purchaseDate: ev.target.value }) })
               ),
               e("div", { style: { display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 24 } },
                 e("button", { className: "btn btn-secondary", onClick: () => setModal(null) }, "Cancel"),
@@ -858,9 +902,19 @@
                   investmentTypes.map(t => e("option", { key: t, value: t }, t))
                 )
               ),
+              e("div", { className: "form-row" },
+                e("div", { className: "form-group" },
+                  e("label", { className: "form-label" }, "Current Amount (₹)"),
+                  e("input", { className: "input-field", type: "number", value: investForm.amount || "", onChange: ev => setInvestForm({ ...investForm, amount: +ev.target.value }) })
+                ),
+                e("div", { className: "form-group" },
+                  e("label", { className: "form-label" }, "Cost Basis (₹)"),
+                  e("input", { className: "input-field", type: "number", value: investForm.costBasis || "", onChange: ev => setInvestForm({ ...investForm, costBasis: +ev.target.value }) })
+                )
+              ),
               e("div", { className: "form-group" },
-                e("label", { className: "form-label" }, "Amount (₹)"),
-                e("input", { className: "input-field", type: "number", value: investForm.amount || "", onChange: ev => setInvestForm({ ...investForm, amount: +ev.target.value }) })
+                e("label", { className: "form-label" }, "Purchase Date"),
+                e("input", { className: "input-field", type: "date", value: investForm.purchaseDate || "", onChange: ev => setInvestForm({ ...investForm, purchaseDate: ev.target.value }) })
               ),
               e("div", { style: { display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 24 } },
                 e("button", { className: "btn btn-secondary", onClick: () => setModal(null) }, "Cancel"),
