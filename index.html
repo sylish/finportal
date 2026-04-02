@@ -253,6 +253,17 @@
       return { gain, roi };
     };
 
+    // Investment type grouping for summary
+    const groupInvestmentType = (type) => {
+      const typeMap = {
+        "Car": "Vehicles",
+        "Two Wheeler": "Vehicles",
+        "Physical Gold": "Gold",
+        "ETF": "Gold"
+      };
+      return typeMap[type] || type;
+    };
+
     const loadData = (key, fallback) => {
       try {
         const d = localStorage.getItem(key);
@@ -353,9 +364,10 @@
         const total = allInvestments.reduce((s, i) => s + i.amount, 0);
         const byType = {};
         allInvestments.forEach(i => {
-          if (!byType[i.type]) byType[i.type] = { amount: 0, count: 0 };
-          byType[i.type].amount += i.amount;
-          byType[i.type].count += 1;
+          const groupedType = groupInvestmentType(i.type);
+          if (!byType[groupedType]) byType[groupedType] = { amount: 0, count: 0 };
+          byType[groupedType].amount += i.amount;
+          byType[groupedType].count += 1;
         });
         return { total, byType, allInvestments };
       }, [portfolios]);
