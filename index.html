@@ -217,6 +217,8 @@
       const [activePortfolioId, setActivePortfolioId] = useState(null);
       const [expandedPortfolio, setExpandedPortfolio] = useState(null);
       const [lastSaved, setLastSaved] = useState(new Date());
+      const [portfolioSort, setPortfolioSort] = useState("bankName");
+      const [summarySort, setSummarySort] = useState("amount");
 
       useEffect(() => { localStorage.setItem("wealth_portfolios", JSON.stringify(portfolios)); }, [portfolios]);
 
@@ -314,12 +316,33 @@
         input.click();
       };
 
-      const typeBreakdown = Object.entries(stats.byType).map(([type, data]) => ({
-        type,
-        amount: data.amount,
-        count: data.count,
-        percentage: stats.total ? ((data.amount / stats.total) * 100).toFixed(1) : 0
-      })).sort((a, b) => b.amount - a.amount);
+      const typeBreakdown = useMemo(() => {
+        let breakdown = Object.entries(stats.byType).map(([type, data]) => ({
+          type,
+          amount: data.amount,
+          count: data.count,
+          percentage: stats.total ? ((data.amount / stats.total) * 100).toFixed(1) : 0
+        }));
+
+        if (summarySort === "amount") breakdown.sort((a, b) => b.amount - a.amount);
+        else if (summarySort === "type") breakdown.sort((a, b) => a.type.localeCompare(b.type));
+        else if (summarySort === "percentage") breakdown.sort((a, b) => b.percentage - a.percentage);
+
+        return breakdown;
+      }, [stats.byType, stats.total, summarySort]);
+
+      const sortedPortfolios = useMemo(() => {
+        let sorted = [...portfolios.map(p => {
+          const portTotal = p.investments.reduce((s, i) => s + i.amount, 0);
+          return { ...p, total: portTotal };
+        })];
+
+        if (portfolioSort === "bankName") sorted.sort((a, b) => a.bankName.localeCompare(b.bankName));
+        else if (portfolioSort === "userName") sorted.sort((a, b) => a.userName.localeCompare(b.userName));
+        else if (portfolioSort === "amount") sorted.sort((a, b) => b.total - a.total);
+
+        return sorted;
+      }, [portfolios, portfolioSort]);
 
       const timeStr = lastSaved.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
 
@@ -366,7 +389,12 @@
           // EXECUTIVE SUMMARY - BY INVESTMENT TYPE
           e("div", { className: "section" },
             e("div", { className: "section-header" },
-              e("h2", { className: "section-title" }, "📊 Executive Summary - Investment Types")
+              e("h2", { className: "section-title" }, "📊 Executive Summary - Investment Types"),
+              e("select", { className: "input-field", value: summarySort, onChange: ev => setSummarySort(ev.target.value), style: { width: "200px" } },
+                e("option", { value: "amount" }, "Sort by Amount"),
+                e("option", { value: "type" }, "Sort by Type"),
+                e("option", { value: "percentage" }, "Sort by Percentage")
+              )
             ),
             e("table", null,
               e("thead", null,
@@ -404,9 +432,14 @@
           // PORTFOLIOS SECTION
           e("div", { className: "section" },
             e("div", { className: "section-header" },
-              e("h2", { className: "section-title" }, "🏦 Portfolios & Investments")
+              e("h2", { className: "section-title" }, "🏦 Portfolios & Investments"),
+              e("select", { className: "input-field", value: portfolioSort, onChange: ev => setPortfolioSort(ev.target.value), style: { width: "200px" } },
+                e("option", { value: "bankName" }, "Sort by Bank Name"),
+                e("option", { value: "userName" }, "Sort by User Name"),
+                e("option", { value: "amount" }, "Sort by Amount")
+              )
             ),
-            portfolios.length > 0 ? portfolios.map(portfolio => {
+            sortedPortfolios.length > 0 ? sortedPortfolios.map(portfolio => {
               const portTotal = portfolio.investments.reduce((s, i) => s + i.amount, 0);
               return e("div", { key: portfolio.id },
                 e("div", { className: "portfolio-card", onClick: () => setExpandedPortfolio(expandedPortfolio === portfolio.id ? null : portfolio.id) },
