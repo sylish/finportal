@@ -176,7 +176,7 @@
     const fmt = n => "₹" + Number(n).toLocaleString("en-IN");
     const loadData = (key, fallback) => { try { const d = localStorage.getItem(key); return d ? JSON.parse(d) : fallback; } catch { return fallback; } };
 
-    const investmentTypes = ["Savings Account", "Fixed Deposit", "ULIP", "Mutual Fund", "Stocks", "Employee Provident Fund", "Public Provident Fund", "Physical Gold", "ETF", "House/Apartment", "Car", "Two Wheeler", "Other"];
+    const investmentTypes = ["Savings Account", "Fixed Deposit", "ULIP", "Mutual Fund", "Stocks", "Employee Provident Fund", "Public Provident Fund", "Gratuity", "Physical Gold", "ETF", "House/Apartment", "Car", "Two Wheeler", "Other"];
 
     const defaultPortfolios = [
       {
