@@ -181,6 +181,7 @@
     const defaultPortfolios = [
       {
         id: 1,
+        isBank: true,
         bankName: "SBI Bank",
         userName: "Sylish Kumar",
         investments: [
@@ -190,6 +191,7 @@
       },
       {
         id: 2,
+        isBank: true,
         bankName: "HDFC Bank",
         userName: "Sylish Kumar",
         investments: [
@@ -199,6 +201,7 @@
       },
       {
         id: 3,
+        isBank: true,
         bankName: "ICICI Insurance",
         userName: "Sylish Kumar",
         investments: [
@@ -207,19 +210,21 @@
       },
       {
         id: 4,
-        bankName: "",
-        userName: "Personal Assets",
+        isBank: false,
+        bankName: "Employee Provident Fund",
+        userName: "Sylish Kumar",
         investments: [
-          { id: 1, type: "Physical Gold", name: "Gold Ornaments", amount: 150000 },
-          { id: 2, type: "House/Apartment", name: "Residential Property", amount: 3500000 }
+          { id: 1, type: "Employee Provident Fund", name: "EPF Account", amount: 450000 }
         ]
       },
       {
         id: 5,
-        bankName: "",
-        userName: "Retirement Savings",
+        isBank: false,
+        bankName: "Physical Assets",
+        userName: "Personal",
         investments: [
-          { id: 1, type: "Employee Provident Fund", name: "EPF Account", amount: 450000 }
+          { id: 1, type: "Physical Gold", name: "Gold Ornaments", amount: 150000 },
+          { id: 2, type: "House/Apartment", name: "Residential Property", amount: 3500000 }
         ]
       }
     ];
@@ -252,15 +257,16 @@
       }, [portfolios]);
 
       const addPortfolio = () => {
-        if (!form.bankName || !form.userName) return;
-        setPortfolios(p => [...p, { id: Date.now(), ...form, investments: [] }]);
+        if (!form.userName) return;
+        if (form.isBank && !form.bankName) return;
+        setPortfolios(p => [...p, { id: Date.now(), ...form, isBank: form.isBank || false, investments: [] }]);
         setForm({});
         setModal(null);
         setLastSaved(new Date());
       };
 
       const updatePortfolio = () => {
-        setPortfolios(p => p.map(x => x.id === editId ? { ...x, bankName: form.bankName, userName: form.userName } : x));
+        setPortfolios(p => p.map(x => x.id === editId ? { ...x, isBank: form.isBank || false, bankName: form.bankName, userName: form.userName } : x));
         setForm({});
         setEditId(null);
         setModal(null);
@@ -355,14 +361,14 @@
         })];
 
         if (portfolioSort === "bankName") {
-          // Separate banks from non-banks
-          const banks = sorted.filter(p => p.bankName && String(p.bankName).trim() !== "");
-          const nonBanks = sorted.filter(p => !p.bankName || String(p.bankName).trim() === "");
+          // Separate bank portfolios from non-bank portfolios
+          const banks = sorted.filter(p => p.isBank === true);
+          const nonBanks = sorted.filter(p => p.isBank !== true);
 
-          // Sort banks alphabetically
+          // Sort banks alphabetically by bank name
           banks.sort((a, b) => String(a.bankName || "").localeCompare(String(b.bankName || "")));
-          // Sort non-banks by user name
-          nonBanks.sort((a, b) => String(a.userName || "").localeCompare(String(b.userName || "")));
+          // Sort non-banks by portfolio name (bankName field)
+          nonBanks.sort((a, b) => String(a.bankName || "").localeCompare(String(b.bankName || "")));
 
           // Combine: banks first, then non-banks
           sorted = [...banks, ...nonBanks];
@@ -391,7 +397,7 @@
               e("span", { className: "timestamp" }, `Saved at ${timeStr}`),
               e("button", { className: "btn btn-secondary btn-sm", onClick: () => window.print() }, "🖨️ Print"),
               e("button", { className: "btn btn-secondary btn-sm", onClick: () => setModal("backup") }, "📥 Backup"),
-              e("button", { className: "btn btn-primary btn-sm", onClick: () => { setForm({ bankName: "", userName: "" }); setEditId(null); setModal("addPortfolio"); } }, "+ Add Portfolio")
+              e("button", { className: "btn btn-primary btn-sm", onClick: () => { setForm({ isBank: true, bankName: "", userName: "" }); setEditId(null); setModal("addPortfolio"); } }, "+ Add Portfolio")
             )
           ),
 
@@ -478,8 +484,8 @@
                 e("div", { className: "portfolio-card", onClick: () => setExpandedPortfolio(expandedPortfolio === portfolio.id ? null : portfolio.id) },
                   e("div", { className: "portfolio-header" },
                     e("div", { className: "portfolio-info" },
-                      e("div", { className: "portfolio-name" }, portfolio.bankName),
-                      e("div", { className: "portfolio-desc" }, "User: " + portfolio.userName + " • " + portfolio.investments.length + " investments")
+                      e("div", { className: "portfolio-name" }, (portfolio.isBank ? "🏦 " : "💰 ") + portfolio.bankName),
+                      e("div", { className: "portfolio-desc" }, "User: " + portfolio.userName + " • " + portfolio.investments.length + " investments • " + (portfolio.isBank ? "Bank" : "Non-Bank"))
                     ),
                     e("div", { className: "portfolio-amount" }, fmt(portTotal))
                   ),
@@ -514,7 +520,7 @@
                       )
                     ),
                     e("div", { style: { display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 } },
-                      e("button", { className: "btn btn-secondary btn-sm", onClick: ev => { ev.stopPropagation(); setForm({ bankName: portfolio.bankName, userName: portfolio.userName }); setEditId(portfolio.id); setModal("editPortfolio"); } }, "✏️ Edit"),
+                      e("button", { className: "btn btn-secondary btn-sm", onClick: ev => { ev.stopPropagation(); setForm({ isBank: portfolio.isBank || false, bankName: portfolio.bankName, userName: portfolio.userName }); setEditId(portfolio.id); setModal("editPortfolio"); } }, "✏️ Edit"),
                       e("button", { className: "btn btn-secondary btn-sm", onClick: ev => { ev.stopPropagation(); deletePortfolio(portfolio.id); } }, "🗑️ Delete")
                     )
                   ) : null
@@ -524,7 +530,7 @@
               e("div", { style: { fontSize: 48, marginBottom: 16 } }, "🏦"),
               e("h3", { style: { fontSize: 18, fontWeight: 600, color: "#d1d5db", marginBottom: 8 } }, "No Portfolios Yet"),
               e("p", { style: { marginBottom: 24 } }, "Create your first portfolio to start tracking"),
-              e("button", { className: "btn btn-primary", onClick: () => { setForm({ bankName: "", userName: "" }); setModal("addPortfolio"); } }, "+ Add Portfolio")
+              e("button", { className: "btn btn-primary", onClick: () => { setForm({ isBank: true, bankName: "", userName: "" }); setModal("addPortfolio"); } }, "+ Add Portfolio")
             )
           )
         ),
@@ -537,12 +543,19 @@
               e("button", { className: "btn btn-secondary btn-sm", onClick: () => setModal(null) }, "✕")
             ),
             e("div", { className: "modal-body" },
-              e("div", { className: "form-group" },
-                e("label", { className: "form-label" }, "Bank / Institution Name"),
+              e("div", { className: "form-group", style: { display: "flex", alignItems: "center", gap: 12, padding: "12px", background: "rgba(99,102,241,0.1)", borderRadius: 8, marginBottom: 16 } },
+                e("input", { type: "checkbox", checked: form.isBank || false, onChange: ev => setForm({ ...form, isBank: ev.target.checked }), style: { cursor: "pointer", width: 18, height: 18 } }),
+                e("label", { style: { cursor: "pointer", margin: 0, flex: 1 } }, form.isBank ? "📦 Bank / Financial Institution" : "💰 Non-Bank Asset / Investment")
+              ),
+              form.isBank ? e("div", { className: "form-group" },
+                e("label", { className: "form-label" }, "Bank / Institution Name *"),
                 e("input", { className: "input-field", placeholder: "e.g. SBI Bank, HDFC, ICICI Insurance", value: form.bankName || "", onChange: ev => setForm({ ...form, bankName: ev.target.value }) })
+              ) : e("div", { className: "form-group" },
+                e("label", { className: "form-label" }, "Asset / Investment Name"),
+                e("input", { className: "input-field", placeholder: "e.g. EPF, Gratuity, Physical Gold, House", value: form.bankName || "", onChange: ev => setForm({ ...form, bankName: ev.target.value }) })
               ),
               e("div", { className: "form-group" },
-                e("label", { className: "form-label" }, "Account Holder Name"),
+                e("label", { className: "form-label" }, "Account Holder / Owner Name *"),
                 e("input", { className: "input-field", placeholder: "Your name", value: form.userName || "", onChange: ev => setForm({ ...form, userName: ev.target.value }) })
               ),
               e("div", { style: { display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 24 } },
@@ -560,12 +573,19 @@
               e("button", { className: "btn btn-secondary btn-sm", onClick: () => setModal(null) }, "✕")
             ),
             e("div", { className: "modal-body" },
-              e("div", { className: "form-group" },
+              e("div", { className: "form-group", style: { display: "flex", alignItems: "center", gap: 12, padding: "12px", background: "rgba(99,102,241,0.1)", borderRadius: 8, marginBottom: 16 } },
+                e("input", { type: "checkbox", checked: form.isBank || false, onChange: ev => setForm({ ...form, isBank: ev.target.checked }), style: { cursor: "pointer", width: 18, height: 18 } }),
+                e("label", { style: { cursor: "pointer", margin: 0, flex: 1 } }, form.isBank ? "📦 Bank / Financial Institution" : "💰 Non-Bank Asset / Investment")
+              ),
+              form.isBank ? e("div", { className: "form-group" },
                 e("label", { className: "form-label" }, "Bank / Institution Name"),
+                e("input", { className: "input-field", value: form.bankName || "", onChange: ev => setForm({ ...form, bankName: ev.target.value }) })
+              ) : e("div", { className: "form-group" },
+                e("label", { className: "form-label" }, "Asset / Investment Name"),
                 e("input", { className: "input-field", value: form.bankName || "", onChange: ev => setForm({ ...form, bankName: ev.target.value }) })
               ),
               e("div", { className: "form-group" },
-                e("label", { className: "form-label" }, "Account Holder Name"),
+                e("label", { className: "form-label" }, "Account Holder / Owner Name"),
                 e("input", { className: "input-field", value: form.userName || "", onChange: ev => setForm({ ...form, userName: ev.target.value }) })
               ),
               e("div", { style: { display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 24 } },
