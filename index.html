@@ -12,6 +12,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%); color: #fff; }
     #root { min-height: 100vh; }
+    .progress-bar { transition: width 0.3s ease; }
   </style>
 </head>
 <body>
@@ -22,7 +23,7 @@
     try {
       const test = localStorage.getItem("finportal_portfolios");
       if (test) {
-        JSON.parse(test); // Test if valid
+        JSON.parse(test);
       }
     } catch (e) {
       console.warn("Clearing corrupted localStorage...");
@@ -80,7 +81,6 @@
     const formatPct = (n) => (n >= 0 ? "+" : "") + n.toFixed(2) + "%";
     const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" });
 
-    /* Performance Analytics */
     const calculatePerformanceMetrics = (investments) => {
       if (!investments.length) return { roi: 0, volatility: 0, sharpeRatio: 0 };
       const totalInvested = investments.reduce((s, i) => s + i.invested, 0);
@@ -94,7 +94,6 @@
       return { roi, volatility, sharpeRatio };
     };
 
-    /* Risk Analysis */
     const calculateRiskScore = (portfolio) => {
       const investments = portfolio.investments;
       if (!investments.length) return 0;
@@ -106,7 +105,6 @@
       return Math.min(100, Math.max(0, riskScore));
     };
 
-    /* Modal Component */
     function Modal({ open, onClose, title, children }) {
       if (!open) return null;
       return (
@@ -171,7 +169,6 @@
           const saved = localStorage.getItem("finportal_portfolios");
           if (!saved) return initialPortfolios;
           const parsed = JSON.parse(saved);
-          // Validate structure
           if (!Array.isArray(parsed)) return initialPortfolios;
           return parsed.map(p => ({
             id: p.id || Date.now(),
@@ -193,6 +190,7 @@
           return initialPortfolios;
         }
       });
+
       const [categories, setCategories] = useState(() => {
         try {
           const saved = localStorage.getItem("finportal_categories");
@@ -201,6 +199,7 @@
           return defaultCategories;
         }
       });
+
       const [goals, setGoals] = useState(() => {
         try {
           const saved = localStorage.getItem("finportal_goals");
@@ -209,6 +208,7 @@
           return [];
         }
       });
+
       const [alerts, setAlerts] = useState(() => {
         try {
           const saved = localStorage.getItem("finportal_alerts");
@@ -217,14 +217,12 @@
           return [];
         }
       });
-      const [view, setView] = useState("dashboard");
-      const [editingId, setEditingId] = useState(null);
-      const [editingInvId, setEditingInvId] = useState(null);
+
+      const [view, setView] = useState("summary");
       const [showGoals, setShowGoals] = useState(false);
       const [showAlerts, setShowAlerts] = useState(false);
       const [showReports, setShowReports] = useState(false);
       const [searchTerm, setSearchTerm] = useState("");
-      const [sortBy, setSortBy] = useState("name");
       const [newGoal, setNewGoal] = useState({ name: "", targetValue: "", portfolio: portfolios[0]?.id || 1 });
       const [newAlert, setNewAlert] = useState({ name: "", condition: "loss", threshold: 10, portfolio: portfolios[0]?.id || 1 });
       const [newPortfolio, setNewPortfolio] = useState({ name: "", description: "" });
@@ -234,6 +232,45 @@
       useMemo(() => { localStorage.setItem("finportal_portfolios", JSON.stringify(portfolios)); }, [portfolios]);
       useMemo(() => { localStorage.setItem("finportal_goals", JSON.stringify(goals)); }, [goals]);
       useMemo(() => { localStorage.setItem("finportal_alerts", JSON.stringify(alerts)); }, [alerts]);
+
+      // Data aggregation functions
+      const allInvestments = useMemo(() => {
+        return portfolios.flatMap(p => p.investments.map(i => ({ ...i, portfolioId: p.id, portfolioName: p.name })));
+      }, [portfolios]);
+
+      const summaryStats = useMemo(() => {
+        let invested = 0, current = 0;
+        portfolios.forEach((p) => p.investments.forEach((i) => { invested += i.invested; current += i.current; }));
+        return { invested, current, gain: current - invested, gainPct: invested ? ((current - invested) / invested) * 100 : 0 };
+      }, [portfolios]);
+
+      const categoryBreakdown = useMemo(() => {
+        const breakdown = {};
+        defaultCategories.forEach(cat => { breakdown[cat] = { invested: 0, current: 0, count: 0 }; });
+        allInvestments.forEach(inv => {
+          if (breakdown[inv.category]) {
+            breakdown[inv.category].invested += inv.invested;
+            breakdown[inv.category].current += inv.current;
+            breakdown[inv.category].count += 1;
+          }
+        });
+        return breakdown;
+      }, [allInvestments]);
+
+      const userBreakdown = useMemo(() => {
+        const breakdown = {};
+        portfolios.forEach(p => {
+          const userName = p.description?.split("Account holder: ")[1] || "Other";
+          if (!breakdown[userName]) breakdown[userName] = { portfolios: [], invested: 0, current: 0 };
+          breakdown[userName].portfolios.push(p);
+          p.investments.forEach(i => { breakdown[userName].invested += i.invested; breakdown[userName].current += i.current; });
+        });
+        return breakdown;
+      }, [portfolios]);
+
+      const topHoldings = useMemo(() => {
+        return allInvestments.sort((a, b) => b.current - a.current).slice(0, 10);
+      }, [allInvestments]);
 
       // Portfolio management
       const addPortfolio = () => {
@@ -262,15 +299,6 @@
         setPortfolios(portfolios.map(p => {
           if (p.id === portfolioId) {
             return { ...p, investments: p.investments.filter(i => i.id !== investmentId) };
-          }
-          return p;
-        }));
-      };
-
-      const updateInvestment = (portfolioId, investmentId, updates) => {
-        setPortfolios(portfolios.map(p => {
-          if (p.id === portfolioId) {
-            return { ...p, investments: p.investments.map(i => i.id === investmentId ? { ...i, ...updates } : i) };
           }
           return p;
         }));
@@ -305,37 +333,21 @@
         a.click();
       };
 
-      // Migrate old wealth data format to new FinPortal format
       const migrateOldFormat = (oldData) => {
         if (!oldData.portfolios || !Array.isArray(oldData.portfolios)) return oldData;
-
-        // Check if this is old format (has bankName or userName fields)
         const isOldFormat = oldData.portfolios.some(p => p.bankName || p.userName);
+        if (!isOldFormat) return oldData;
 
-        if (!isOldFormat) return oldData; // Already in new format
-
-        // Map old investment types to new categories
         const typeToCategory = {
-          "Savings Account": "Cash",
-          "Fixed Deposit": "Bonds",
-          "Public Provident Fund": "Bonds",
-          "Mutual Fund": "Mutual Funds",
-          "Stocks": "Stocks",
-          "ETF": "Stocks",
-          "ULIP": "Mutual Funds",
-          "Employee Provident Fund": "Bonds",
-          "Gratuity": "Cash",
-          "Physical Gold": "Real Estate",
-          "House/Apartment": "Real Estate",
-          "Car": "Real Estate",
-          "Two Wheeler": "Real Estate",
-          "Sukanya Samridhi": "Bonds"
+          "Savings Account": "Cash", "Fixed Deposit": "Bonds", "Public Provident Fund": "Bonds",
+          "Mutual Fund": "Mutual Funds", "Stocks": "Stocks", "ETF": "Stocks", "ULIP": "Mutual Funds",
+          "Employee Provident Fund": "Bonds", "Gratuity": "Cash", "Physical Gold": "Real Estate",
+          "House/Apartment": "Real Estate", "Car": "Real Estate", "Two Wheeler": "Real Estate", "Sukanya Samridhi": "Bonds"
         };
 
         const migratedPortfolios = oldData.portfolios.map(oldPort => {
           const portfolioName = oldPort.bankName || "Portfolio";
           const description = oldPort.userName ? `Account holder: ${oldPort.userName}` : "";
-
           const migratedInvestments = oldPort.investments.map(oldInv => ({
             id: oldInv.id,
             name: oldInv.name,
@@ -354,12 +366,7 @@
           };
         });
 
-        return {
-          portfolios: migratedPortfolios,
-          goals: oldData.goals || [],
-          alerts: oldData.alerts || [],
-          categories: defaultCategories
-        };
+        return { portfolios: migratedPortfolios, goals: oldData.goals || [], alerts: oldData.alerts || [], categories: defaultCategories };
       };
 
       const importData = (e) => {
@@ -369,11 +376,8 @@
         reader.onload = (event) => {
           try {
             let data = JSON.parse(event.target.result);
-
-            // Try to migrate old format
             data = migrateOldFormat(data);
 
-            // Validate and fix portfolio data
             if (data.portfolios && Array.isArray(data.portfolios)) {
               const fixedPortfolios = data.portfolios.map(p => ({
                 id: p.id || Date.now() + Math.random(),
@@ -392,14 +396,12 @@
               setPortfolios(fixedPortfolios);
             }
 
-            // Import goals, alerts, categories if they exist
             if (data.goals && Array.isArray(data.goals)) setGoals(data.goals);
             if (data.alerts && Array.isArray(data.alerts)) setAlerts(data.alerts);
             if (data.categories && Array.isArray(data.categories)) setCategories(data.categories);
 
             alert("✅ Data imported successfully!\n\n📊 Your wealth data has been migrated to the new format.");
-            // Reset view to dashboard after import
-            setView("dashboard");
+            setView("summary");
             setSearchTerm("");
           } catch (error) {
             console.error("Import error:", error);
@@ -410,10 +412,7 @@
       };
 
       const generateReport = () => {
-        const totalInvested = portfolios.reduce((s, p) => s + p.investments.reduce((s2, i) => s2 + i.invested, 0), 0);
-        const totalCurrent = portfolios.reduce((s, p) => s + p.investments.reduce((s2, i) => s2 + i.current, 0), 0);
-        const totalGain = totalCurrent - totalInvested;
-        const reportText = `FinPortal Report - ${new Date().toLocaleDateString()}\n\nTotal Invested: ${formatCurrency(totalInvested)}\nCurrent Value: ${formatCurrency(totalCurrent)}\nTotal Gain/Loss: ${formatCurrency(totalGain)} (${formatPct((totalGain / totalInvested) * 100)})\n\nPortfolios: ${portfolios.length}\nInvestments: ${portfolios.reduce((s, p) => s + p.investments.length, 0)}`;
+        const reportText = `FinPortal Report - ${new Date().toLocaleDateString()}\n\nTotal Invested: ${formatCurrency(summaryStats.invested)}\nCurrent Value: ${formatCurrency(summaryStats.current)}\nTotal Gain/Loss: ${formatCurrency(summaryStats.gain)} (${formatPct(summaryStats.gainPct)})\n\nPortfolios: ${portfolios.length}\nInvestments: ${allInvestments.length}`;
         const blob = new Blob([reportText], { type: "text/plain" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -422,44 +421,20 @@
         a.click();
       };
 
-      // Stats
-      const stats = useMemo(() => {
-        let invested = 0, current = 0;
-        portfolios.forEach((p) => p.investments.forEach((i) => { invested += i.invested; current += i.current; }));
-        return { invested, current, gain: current - invested, gainPct: invested ? ((current - invested) / invested) * 100 : 0 };
-      }, [portfolios]);
-
-      // Filtered data
-      const filteredPortfolios = useMemo(() => {
-        try {
-          return portfolios.filter(p => {
-            const pName = (p.name || "").toLowerCase();
-            const pMatch = pName.includes((searchTerm || "").toLowerCase());
-            const invMatch = p.investments && p.investments.some(i => {
-              const iName = (i.name || "").toLowerCase();
-              return iName.includes((searchTerm || "").toLowerCase());
-            });
-            return pMatch || invMatch;
-          });
-        } catch (e) {
-          console.error("Filter error:", e);
-          return portfolios;
-        }
-      }, [portfolios, searchTerm]);
-
       return (
         <div className="min-h-screen p-6 md:p-8">
           <div className="max-w-7xl mx-auto">
             {/* Header */}
             <div className="mb-8">
               <h1 className="text-4xl font-bold mb-2">💼 FinPortal</h1>
-              <p className="text-gray-400">Advanced portfolio management with analytics and insights</p>
+              <p className="text-gray-400">Advanced portfolio management with comprehensive analytics</p>
             </div>
 
             {/* Navigation */}
             <div className="flex flex-wrap gap-3 mb-8 border-b border-gray-700 pb-4">
-              <button onClick={() => { setView("dashboard"); setSearchTerm(""); }} className={`px-4 py-2 rounded-lg font-medium transition-colors ${view === "dashboard" ? "bg-indigo-600 text-white" : "text-gray-400 hover:text-white"}`}>📊 Dashboard</button>
-              <button onClick={() => { setView("analytics"); setSearchTerm(""); }} className={`px-4 py-2 rounded-lg font-medium transition-colors ${view === "analytics" ? "bg-indigo-600 text-white" : "text-gray-400 hover:text-white"}`}>📈 Analytics</button>
+              <button onClick={() => { setView("summary"); setSearchTerm(""); }} className={`px-4 py-2 rounded-lg font-medium transition-colors ${view === "summary" ? "bg-indigo-600 text-white" : "text-gray-400 hover:text-white"}`}>📊 Summary</button>
+              <button onClick={() => { setView("dashboard"); setSearchTerm(""); }} className={`px-4 py-2 rounded-lg font-medium transition-colors ${view === "dashboard" ? "bg-indigo-600 text-white" : "text-gray-400 hover:text-white"}`}>📈 Dashboard</button>
+              <button onClick={() => { setView("analytics"); setSearchTerm(""); }} className={`px-4 py-2 rounded-lg font-medium transition-colors ${view === "analytics" ? "bg-indigo-600 text-white" : "text-gray-400 hover:text-white"}`}>📉 Analytics</button>
               <button onClick={() => setShowGoals(!showGoals)} className="px-4 py-2 rounded-lg font-medium text-gray-400 hover:text-white transition-colors">🎯 Goals</button>
               <button onClick={() => setShowAlerts(!showAlerts)} className="px-4 py-2 rounded-lg font-medium text-gray-400 hover:text-white transition-colors">⚠️ Alerts</button>
               <button onClick={() => setShowReports(!showReports)} className="px-4 py-2 rounded-lg font-medium text-gray-400 hover:text-white transition-colors">📄 Reports</button>
@@ -478,23 +453,134 @@
                   setGoals([]);
                   setAlerts([]);
                   setCategories(defaultCategories);
-                  setView("dashboard");
+                  setView("summary");
                   alert("✅ Reset to defaults complete!");
                 }
               }} className="px-4 py-2 rounded-lg font-medium text-gray-400 hover:text-white transition-colors">🔄 Reset</button>
             </div>
 
-            {/* Dashboard View */}
-            {view === "dashboard" && (
+            {/* SUMMARY VIEW - Portfolio Overview */}
+            {view === "summary" && (
               <>
-                {/* Stats Cards */}
+                {/* Overview Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                  <StatCard icon="💵" label="Total Invested" value={formatCurrency(stats.invested)} sub={`${portfolios.length} portfolio(s)`} color="#6366f1" />
-                  <StatCard icon="📊" label="Current Value" value={formatCurrency(stats.current)} sub={`${portfolios.reduce((s, p) => s + p.investments.length, 0)} investments`} color="#22d3ee" />
-                  <StatCard icon={stats.gain >= 0 ? "📈" : "📉"} label="Gain/Loss" value={formatCurrency(stats.gain)} sub={formatPct(stats.gainPct)} color={stats.gain >= 0 ? "#10b981" : "#ef4444"} />
-                  <StatCard icon="🎯" label="Active Goals" value={goals.length} sub={`${alerts.length} alerts set`} color="#f59e0b" />
+                  <StatCard icon="💵" label="Total Invested" value={formatCurrency(summaryStats.invested)} sub={portfolios.length + " portfolios"} color="#6366f1" />
+                  <StatCard icon="📊" label="Current Value" value={formatCurrency(summaryStats.current)} sub={allInvestments.length + " investments"} color="#22d3ee" />
+                  <StatCard icon={summaryStats.gain >= 0 ? "📈" : "📉"} label="Gain/Loss" value={formatCurrency(summaryStats.gain)} sub={formatPct(summaryStats.gainPct)} color={summaryStats.gain >= 0 ? "#10b981" : "#ef4444"} />
+                  <StatCard icon="🎯" label="Active Goals" value={goals.length} sub={alerts.length + " alerts"} color="#f59e0b" />
                 </div>
 
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                  {/* Asset Type Allocation */}
+                  <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700">
+                    <h2 className="text-xl font-bold mb-4">📦 Asset Type Allocation</h2>
+                    <div className="space-y-3">
+                      {defaultCategories.map((cat) => {
+                        const data = categoryBreakdown[cat];
+                        const pct = summaryStats.current ? (data.current / summaryStats.current) * 100 : 0;
+                        return (
+                          <div key={cat}>
+                            <div className="flex justify-between mb-1">
+                              <span className="text-sm font-medium">{CATEGORY_ICONS[cat]} {cat}</span>
+                              <span className="text-sm text-gray-400">{formatCurrency(data.current)} ({pct.toFixed(1)}%)</span>
+                            </div>
+                            <div className="w-full h-2 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }}>
+                              <div className="h-full rounded-full progress-bar" style={{ width: pct + "%", background: COLORS[defaultCategories.indexOf(cat)] }}></div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* User Breakdown */}
+                  <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700">
+                    <h2 className="text-xl font-bold mb-4">👥 Portfolio by User</h2>
+                    <div className="space-y-3">
+                      {Object.entries(userBreakdown).map(([user, data]) => {
+                        const pct = summaryStats.current ? (data.current / summaryStats.current) * 100 : 0;
+                        return (
+                          <div key={user} className="p-3 bg-slate-700/30 rounded-lg">
+                            <div className="flex justify-between mb-1">
+                              <span className="text-sm font-medium">👤 {user}</span>
+                              <span className="text-sm text-gray-400">{formatCurrency(data.current)} ({pct.toFixed(1)}%)</span>
+                            </div>
+                            <div className="text-xs text-gray-500 mb-2">{data.portfolios.length} portfolio(s) • {data.portfolios.reduce((s, p) => s + p.investments.length, 0)} investments</div>
+                            <div className="w-full h-2 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }}>
+                              <div className="h-full rounded-full progress-bar" style={{ width: pct + "%", background: "#6366f1" }}></div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Top Holdings */}
+                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700 mb-8">
+                  <h2 className="text-xl font-bold mb-4">🏆 Top 10 Holdings</h2>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-600">
+                          <th className="text-left py-2 px-3">Investment</th>
+                          <th className="text-right py-2 px-3">Category</th>
+                          <th className="text-right py-2 px-3">Current Value</th>
+                          <th className="text-right py-2 px-3">Gain/Loss</th>
+                          <th className="text-right py-2 px-3">Portfolio</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {topHoldings.map((inv) => {
+                          const gain = inv.current - inv.invested;
+                          const gainPct = (gain / (inv.invested || 1)) * 100;
+                          return (
+                            <tr key={inv.id} className="border-b border-slate-700 hover:bg-slate-700/30">
+                              <td className="py-3 px-3">{CATEGORY_ICONS[inv.category]} {inv.name}</td>
+                              <td className="text-right py-3 px-3">{inv.category}</td>
+                              <td className="text-right py-3 px-3 font-medium">{formatCurrency(inv.current)}</td>
+                              <td className="text-right py-3 px-3" style={{color: gain >= 0 ? "#10b981" : "#ef4444"}}>{formatCurrency(gain)} ({formatPct(gainPct)})</td>
+                              <td className="text-right py-3 px-3 text-gray-400 text-xs">{inv.portfolioName}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Bank/Institution Summary */}
+                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700">
+                  <h2 className="text-xl font-bold mb-4">🏦 Portfolio Summary</h2>
+                  <div className="space-y-2">
+                    {portfolios.map((p) => {
+                      const invested = p.investments.reduce((s, i) => s + i.invested, 0);
+                      const current = p.investments.reduce((s, i) => s + i.current, 0);
+                      const gain = current - invested;
+                      const pct = summaryStats.current ? (current / summaryStats.current) * 100 : 0;
+                      return (
+                        <div key={p.id} className="p-3 bg-slate-700/30 rounded-lg">
+                          <div className="flex justify-between items-start mb-1">
+                            <div>
+                              <p className="font-medium text-sm">{p.name}</p>
+                              <p className="text-xs text-gray-400">{p.investments.length} investments • {formatCurrency(current)}</p>
+                            </div>
+                            <span className="text-sm font-medium" style={{color: gain >= 0 ? "#10b981" : "#ef4444"}}>{formatCurrency(gain)}</span>
+                          </div>
+                          <div className="w-full h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }}>
+                            <div className="h-full rounded-full progress-bar" style={{ width: pct + "%", background: "#6366f1" }}></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* DASHBOARD VIEW - Detailed Portfolios */}
+            {view === "dashboard" && (
+              <>
                 {/* Add Portfolio */}
                 <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-2xl p-6 mb-8 border border-indigo-800">
                   <h2 className="text-xl font-bold mb-4">➕ Add New Portfolio</h2>
@@ -507,7 +593,7 @@
 
                 {/* Portfolios */}
                 <div className="space-y-6">
-                  {filteredPortfolios.map((portfolio) => {
+                  {portfolios.map((portfolio) => {
                     const invested = portfolio.investments.reduce((s, i) => s + i.invested, 0);
                     const current = portfolio.investments.reduce((s, i) => s + i.current, 0);
                     const gain = current - invested;
@@ -583,14 +669,11 @@
               </>
             )}
 
-            {/* Analytics View */}
+            {/* ANALYTICS VIEW */}
             {view === "analytics" && (
               <div className="space-y-6">
                 <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700">
                   <h2 className="text-2xl font-bold mb-4">📊 Performance Analytics</h2>
-                  <div className="mb-4">
-                    <input type="text" placeholder="Search portfolios..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full px-4 py-2 rounded-lg text-white text-sm" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }} />
-                  </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
@@ -603,7 +686,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredPortfolios.map((p) => {
+                        {portfolios.map((p) => {
                           const metrics = calculatePerformanceMetrics(p.investments);
                           const risk = calculateRiskScore(p);
                           return (
@@ -637,7 +720,6 @@
                   <h3 className="font-semibold mb-3">Add Goal</h3>
                   <Field label="Goal Name" value={newGoal.name} onChange={(val) => setNewGoal({...newGoal, name: val})} placeholder="e.g., $1M Net Worth" />
                   <Field label="Target Value" type="number" value={newGoal.targetValue} onChange={(val) => setNewGoal({...newGoal, targetValue: val})} placeholder="e.g., 1000000" />
-                  <Select label="Portfolio" value={newGoal.portfolio} onChange={(val) => setNewGoal({...newGoal, portfolio: parseInt(val)})} options={portfolios.map(p => p.id.toString())} />
                   <button onClick={addGoal} className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-medium">Create Goal</button>
                 </div>
                 {goals.length > 0 && (
@@ -687,9 +769,8 @@
             {/* Reports Modal */}
             <Modal open={showReports} onClose={() => setShowReports(false)} title="📄 Generate Report">
               <div className="space-y-4">
-                <p className="text-gray-300">Generate a comprehensive report of your portfolio performance and export it as a document.</p>
+                <p className="text-gray-300">Generate a comprehensive report of your portfolio performance.</p>
                 <button onClick={generateReport} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-medium">📥 Download Report</button>
-                <p className="text-sm text-gray-400 text-center">Report will be saved as a text file with your portfolio summary</p>
               </div>
             </Modal>
           </div>
