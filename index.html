@@ -227,6 +227,7 @@
       const [showAlerts, setShowAlerts] = useState(false);
       const [showReports, setShowReports] = useState(false);
       const [searchTerm, setSearchTerm] = useState("");
+      const [sortBy, setSortBy] = useState("name");
       const [editingPortfolioId, setEditingPortfolioId] = useState(null);
       const [editingInvestmentId, setEditingInvestmentId] = useState(null);
       const [editPortfolioData, setEditPortfolioData] = useState({ name: "", description: "" });
@@ -603,9 +604,40 @@
 
                 {/* Bank/Institution Summary */}
                 <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700">
-                  <h2 className="text-xl font-bold mb-4">🏦 Portfolio Summary</h2>
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold">🏦 Portfolio Summary</h2>
+                    <div className="flex gap-2">
+                      <label className="text-sm text-gray-400">Sort by:</label>
+                      <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="px-3 py-1 rounded-lg bg-slate-700 text-white text-sm">
+                        <option value="name">Portfolio Name</option>
+                        <option value="user">User</option>
+                        <option value="amount-high">Amount (High to Low)</option>
+                        <option value="amount-low">Amount (Low to High)</option>
+                        <option value="bank">Bank/Asset Type</option>
+                      </select>
+                    </div>
+                  </div>
                   <div className="space-y-2">
-                    {portfolios.map((p) => {
+                    {useMemo(() => {
+                      let sorted = [...portfolios];
+                      const getAmount = (p) => p.investments.reduce((s, i) => s + i.current, 0);
+                      const getUser = (p) => p.description?.split("Account holder: ")[1] || p.name;
+
+                      switch(sortBy) {
+                        case "name":
+                          return sorted.sort((a, b) => a.name.localeCompare(b.name));
+                        case "user":
+                          return sorted.sort((a, b) => getUser(a).localeCompare(getUser(b)));
+                        case "amount-high":
+                          return sorted.sort((a, b) => getAmount(b) - getAmount(a));
+                        case "amount-low":
+                          return sorted.sort((a, b) => getAmount(a) - getAmount(b));
+                        case "bank":
+                          return sorted.sort((a, b) => a.name.localeCompare(b.name));
+                        default:
+                          return sorted;
+                      }
+                    }, [portfolios, sortBy]).map((p) => {
                       const invested = p.investments.reduce((s, i) => s + i.invested, 0);
                       const current = p.investments.reduce((s, i) => s + i.current, 0);
                       const gain = current - invested;
