@@ -554,8 +554,15 @@
                         const pct = summaryStats.current ? (data.current / summaryStats.current) * 100 : 0;
                         return (
                           <div key={user} className="p-3 bg-slate-700/30 rounded-lg">
-                            <div className="flex justify-between mb-1">
-                              <span className="text-sm font-medium">👤 {user}</span>
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <p className="text-sm font-medium">👤 {user}</p>
+                                <div className="text-xs text-gray-500 mt-1 ml-5">
+                                  {data.portfolios.map((p) => (
+                                    <div key={p.id} className="text-gray-400">• {p.name}</div>
+                                  ))}
+                                </div>
+                              </div>
                               <span className="text-sm text-gray-400">{formatCurrency(data.current)} ({pct.toFixed(1)}%)</span>
                             </div>
                             <div className="text-xs text-gray-500 mb-2">{data.portfolios.length} portfolio(s) • {data.portfolios.reduce((s, p) => s + p.investments.length, 0)} investments</div>
