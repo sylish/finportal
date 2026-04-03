@@ -647,8 +647,7 @@
                           <div className="flex justify-between items-start mb-1">
                             <div>
                               <p className="font-medium text-sm">{p.name}</p>
-                              <p className="text-xs text-blue-400 font-semibold">👤 {p.description?.split("Account holder: ")[1] || "Unknown"}</p>
-                              <p className="text-xs text-gray-400 mt-1">{p.investments.length} investments • {formatCurrency(current)}</p>
+                              <p className="text-xs text-gray-400">👤 {p.description?.split("Account holder: ")[1] || "Unknown"} • {p.investments.length} investments • {formatCurrency(current)}</p>
                             </div>
                             <span className="text-sm font-medium" style={{color: gain >= 0 ? "#10b981" : "#ef4444"}}>{formatCurrency(gain)}</span>
                           </div>
