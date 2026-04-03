@@ -261,13 +261,28 @@
         reader.onload = (event) => {
           try {
             const data = JSON.parse(event.target.result);
-            if (data.portfolios) setPortfolios(data.portfolios);
-            if (data.goals) setGoals(data.goals);
-            if (data.alerts) setAlerts(data.alerts);
-            if (data.categories) setCategories(data.categories);
-            alert("Data imported successfully!");
+
+            // Validate and fix portfolio data
+            if (data.portfolios && Array.isArray(data.portfolios)) {
+              const fixedPortfolios = data.portfolios.map(p => ({
+                ...p,
+                investments: Array.isArray(p.investments) ? p.investments : []
+              }));
+              setPortfolios(fixedPortfolios);
+            }
+
+            // Import goals, alerts, categories if they exist
+            if (data.goals && Array.isArray(data.goals)) setGoals(data.goals);
+            if (data.alerts && Array.isArray(data.alerts)) setAlerts(data.alerts);
+            if (data.categories && Array.isArray(data.categories)) setCategories(data.categories);
+
+            alert("✅ Data imported successfully!");
+            // Reset view to dashboard after import
+            setView("dashboard");
+            setSearchTerm("");
           } catch (error) {
-            alert("Failed to import data. Please check the file format.");
+            console.error("Import error:", error);
+            alert("❌ Failed to import. File might be corrupted.\n\nError: " + error.message);
           }
         };
         reader.readAsText(file);
@@ -319,6 +334,20 @@
                 ⬆️ Import
                 <input type="file" accept=".json" onChange={importData} style={{ display: "none" }} />
               </label>
+              <button onClick={() => {
+                if (confirm("Reset to default data? This will clear all your current portfolios.")) {
+                  localStorage.removeItem("finportal_portfolios");
+                  localStorage.removeItem("finportal_goals");
+                  localStorage.removeItem("finportal_alerts");
+                  localStorage.removeItem("finportal_categories");
+                  setPortfolios(initialPortfolios);
+                  setGoals([]);
+                  setAlerts([]);
+                  setCategories(defaultCategories);
+                  setView("dashboard");
+                  alert("✅ Reset to defaults complete!");
+                }
+              }} className="px-4 py-2 rounded-lg font-medium text-gray-400 hover:text-white transition-colors">🔄 Reset</button>
             </div>
 
             {/* Dashboard View */}
