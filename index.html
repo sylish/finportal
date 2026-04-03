@@ -715,8 +715,8 @@
                                           <td className="py-3 px-3"><input type="number" value={editInvestmentData.invested} onChange={(e) => setEditInvestmentData({...editInvestmentData, invested: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 rounded bg-slate-600 text-white text-sm text-right" /></td>
                                           <td className="py-3 px-3"><input type="number" value={editInvestmentData.current} onChange={(e) => setEditInvestmentData({...editInvestmentData, current: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 rounded bg-slate-600 text-white text-sm text-right" /></td>
                                           <td className="py-3 px-3 text-center">
-                                            <button onClick={() => saveEditInvestment(portfolio.id, inv.id)} className="text-green-400 hover:text-green-300 mr-2">✓</button>
-                                            <button onClick={cancelEditInvestment} className="text-gray-400 hover:text-gray-300">✕</button>
+                                            <button onClick={() => saveEditInvestment(portfolio.id, inv.id)} className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium mr-2">Save</button>
+                                            <button onClick={cancelEditInvestment} className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-xs font-medium">Cancel</button>
                                           </td>
                                           <td className="text-center py-3 px-3">
                                             <button onClick={() => deleteInvestment(portfolio.id, inv.id)} className="text-red-400 hover:text-red-300">🗑️</button>
