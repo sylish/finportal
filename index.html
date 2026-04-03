@@ -3,33 +3,100 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FinPortal - Advanced Portfolio Management</title>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <!-- Babel for JSX transpilation -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; width: 100%; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%);
-      color: #fff;
-      -webkit-font-smoothing: antialiased;
-    }
-    #root { min-height: 100vh; }
-  </style>
+  <title>FinPortal</title>
 </head>
 <body>
   <div id="root"></div>
 
-  <!-- Load the augmented financial dashboard component -->
-  <script type="text/babel" src="financial-dashboard.jsx"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- Render the component -->
   <script type="text/babel">
+    const { useState, useMemo } = React;
+
+    const initialPortfolios = [
+      {
+        id: 1, name: "Retirement Fund", description: "Long-term retirement savings",
+        investments: [
+          { id: 1, name: "S&P 500 Index Fund", category: "Mutual Funds", invested: 45000, current: 52300, date: "2023-01-15" },
+          { id: 2, name: "Apple Inc.", category: "Stocks", invested: 15000, current: 19200, date: "2022-06-20" },
+        ],
+      },
+      {
+        id: 2, name: "Growth Portfolio", description: "Aggressive growth strategy",
+        investments: [
+          { id: 1, name: "Tesla Inc.", category: "Stocks", invested: 20000, current: 26500, date: "2023-05-10" },
+          { id: 2, name: "Bitcoin", category: "Crypto", invested: 15000, current: 22100, date: "2023-07-20" },
+        ],
+      },
+    ];
+
+    function App() {
+      const [portfolios] = useState(() => {
+        const saved = localStorage.getItem("finportal_portfolios");
+        return saved ? JSON.parse(saved) : initialPortfolios;
+      });
+
+      const stats = useMemo(() => {
+        let invested = 0, current = 0;
+        portfolios.forEach((p) => p.investments.forEach((i) => { invested += i.invested; current += i.current; }));
+        return { invested, current, gain: current - invested };
+      }, [portfolios]);
+
+      return (
+        <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #0c0a1d 0%, #111827 50%)", color: "#fff", padding: "40px 20px", fontFamily: "system-ui" }}>
+          <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+            <h1 style={{ fontSize: "40px", marginBottom: "30px" }}>💼 FinPortal</h1>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "20px", marginBottom: "40px" }}>
+              <div style={{ background: "rgba(99, 102, 241, 0.2)", padding: "20px", borderRadius: "12px", border: "1px solid rgba(99, 102, 241, 0.3)" }}>
+                <div style={{ color: "#9ca3af", fontSize: "12px", marginBottom: "8px" }}>TOTAL INVESTED</div>
+                <div style={{ fontSize: "28px", fontWeight: "bold" }}>${(stats.invested / 1000000).toFixed(2)}M</div>
+              </div>
+              <div style={{ background: "rgba(99, 102, 241, 0.2)", padding: "20px", borderRadius: "12px", border: "1px solid rgba(99, 102, 241, 0.3)" }}>
+                <div style={{ color: "#9ca3af", fontSize: "12px", marginBottom: "8px" }}>CURRENT VALUE</div>
+                <div style={{ fontSize: "28px", fontWeight: "bold" }}>${(stats.current / 1000000).toFixed(2)}M</div>
+              </div>
+              <div style={{ background: stats.gain >= 0 ? "rgba(16, 185, 129, 0.2)" : "rgba(239, 68, 68, 0.2)", padding: "20px", borderRadius: "12px", border: stats.gain >= 0 ? "1px solid rgba(16, 185, 129, 0.3)" : "1px solid rgba(239, 68, 68, 0.3)" }}>
+                <div style={{ color: "#9ca3af", fontSize: "12px", marginBottom: "8px" }}>GAIN/LOSS</div>
+                <div style={{ fontSize: "28px", fontWeight: "bold", color: stats.gain >= 0 ? "#10b981" : "#ef4444" }}>${(stats.gain / 1000).toFixed(0)}K</div>
+              </div>
+              <div style={{ background: "rgba(99, 102, 241, 0.2)", padding: "20px", borderRadius: "12px", border: "1px solid rgba(99, 102, 241, 0.3)" }}>
+                <div style={{ color: "#9ca3af", fontSize: "12px", marginBottom: "8px" }}>PORTFOLIOS</div>
+                <div style={{ fontSize: "28px", fontWeight: "bold" }}>{portfolios.length}</div>
+              </div>
+            </div>
+
+            {portfolios.map((p) => {
+              const invested = p.investments.reduce((s, i) => s + i.invested, 0);
+              const current = p.investments.reduce((s, i) => s + i.current, 0);
+              const gain = current - invested;
+              return (
+                <div key={p.id} style={{ background: "rgba(30, 27, 75, 0.6)", padding: "24px", borderRadius: "12px", marginBottom: "20px", border: "1px solid rgba(99, 102, 241, 0.2)" }}>
+                  <h2 style={{ fontSize: "20px", marginBottom: "8px" }}>{p.name}</h2>
+                  <p style={{ color: "#9ca3af", marginBottom: "16px", fontSize: "14px" }}>{p.description}</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "12px" }}>
+                    <div><div style={{ color: "#9ca3af", fontSize: "12px" }}>Invested</div><div style={{ fontSize: "18px", fontWeight: "bold" }}>${(invested / 1000).toFixed(1)}K</div></div>
+                    <div><div style={{ color: "#9ca3af", fontSize: "12px" }}>Current</div><div style={{ fontSize: "18px", fontWeight: "bold" }}>${(current / 1000).toFixed(1)}K</div></div>
+                    <div><div style={{ color: "#9ca3af", fontSize: "12px" }}>Gain/Loss</div><div style={{ fontSize: "18px", fontWeight: "bold", color: gain >= 0 ? "#10b981" : "#ef4444" }}>${(gain / 1000).toFixed(1)}K</div></div>
+                    <div><div style={{ color: "#9ca3af", fontSize: "12px" }}>Items</div><div style={{ fontSize: "18px", fontWeight: "bold" }}>{p.investments.length}</div></div>
+                  </div>
+                </div>
+              );
+            })}
+
+            <div style={{ background: "rgba(99, 102, 241, 0.1)", padding: "20px", borderRadius: "12px", textAlign: "center", marginTop: "40px", border: "1px dashed rgba(99, 102, 241, 0.3)" }}>
+              <p style={{ color: "#9ca3af" }}>✨ FinPortal is loading with your portfolio data</p>
+              <p style={{ color: "#6b7280", fontSize: "12px", marginTop: "8px" }}>Data saved automatically to your browser</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<FinancialDashboard />);
+    root.render(<App />);
   </script>
 </body>
 </html>
