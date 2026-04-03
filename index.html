@@ -3,100 +3,539 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FinPortal</title>
+  <title>FinPortal - Advanced Portfolio Management</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%); color: #fff; }
+    #root { min-height: 100vh; }
+  </style>
 </head>
 <body>
   <div id="root"></div>
 
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
   <script type="text/babel">
-    const { useState, useMemo } = React;
+    const { useState, useMemo, useCallback } = React;
+
+    const COLORS = ["#6366f1", "#22d3ee", "#f59e0b", "#ef4444", "#10b981", "#ec4899", "#8b5cf6", "#14b8a6"];
+    const CATEGORY_ICONS = { Stocks: "📈", "Mutual Funds": "📊", Bonds: "🏦", "Real Estate": "🏠", Crypto: "₿", Cash: "💵" };
+    const defaultCategories = ["Stocks", "Mutual Funds", "Bonds", "Real Estate", "Crypto", "Cash"];
 
     const initialPortfolios = [
       {
         id: 1, name: "Retirement Fund", description: "Long-term retirement savings",
         investments: [
-          { id: 1, name: "S&P 500 Index Fund", category: "Mutual Funds", invested: 45000, current: 52300, date: "2023-01-15" },
-          { id: 2, name: "Apple Inc.", category: "Stocks", invested: 15000, current: 19200, date: "2022-06-20" },
+          { id: 1, name: "S&P 500 Index Fund", category: "Mutual Funds", invested: 45000, current: 52300, units: 120, date: "2023-01-15" },
+          { id: 2, name: "Apple Inc.", category: "Stocks", invested: 15000, current: 19200, units: 85, date: "2022-06-20" },
+          { id: 3, name: "US Treasury Bonds", category: "Bonds", invested: 30000, current: 31500, units: 30, date: "2021-11-01" },
+          { id: 4, name: "Vanguard Total Bond", category: "Bonds", invested: 20000, current: 20800, units: 200, date: "2023-03-10" },
+          { id: 5, name: "Real Estate Trust", category: "Real Estate", invested: 25000, current: 28900, units: 50, date: "2022-01-05" },
+          { id: 6, name: "High-Yield Savings", category: "Cash", invested: 10000, current: 10450, units: 1, date: "2024-01-01" },
         ],
       },
       {
         id: 2, name: "Growth Portfolio", description: "Aggressive growth strategy",
         investments: [
-          { id: 1, name: "Tesla Inc.", category: "Stocks", invested: 20000, current: 26500, date: "2023-05-10" },
-          { id: 2, name: "Bitcoin", category: "Crypto", invested: 15000, current: 22100, date: "2023-07-20" },
+          { id: 1, name: "Tesla Inc.", category: "Stocks", invested: 20000, current: 26500, units: 50, date: "2023-05-10" },
+          { id: 2, name: "NVIDIA Corp.", category: "Stocks", invested: 18000, current: 31200, units: 30, date: "2023-02-14" },
+          { id: 3, name: "Bitcoin", category: "Crypto", invested: 15000, current: 22100, units: 0.35, date: "2023-07-20" },
+          { id: 4, name: "Ethereum", category: "Crypto", invested: 8000, current: 11300, units: 4.5, date: "2023-08-01" },
+          { id: 5, name: "ARK Innovation ETF", category: "Mutual Funds", invested: 12000, current: 10800, units: 250, date: "2023-04-15" },
+          { id: 6, name: "Amazon.com Inc.", category: "Stocks", invested: 16000, current: 21400, units: 90, date: "2022-11-20" },
+        ],
+      },
+      {
+        id: 3, name: "Conservative Fund", description: "Low-risk stable returns",
+        investments: [
+          { id: 1, name: "Municipal Bonds", category: "Bonds", invested: 40000, current: 42200, units: 40, date: "2022-03-01" },
+          { id: 2, name: "Money Market Fund", category: "Cash", invested: 25000, current: 26100, units: 1, date: "2023-01-01" },
+          { id: 3, name: "Rental Property REIT", category: "Real Estate", invested: 35000, current: 38500, units: 70, date: "2021-09-15" },
+          { id: 4, name: "Corporate Bond Fund", category: "Bonds", invested: 20000, current: 21300, units: 200, date: "2023-06-01" },
+          { id: 5, name: "Johnson & Johnson", category: "Stocks", invested: 10000, current: 11200, units: 60, date: "2023-02-28" },
+          { id: 6, name: "Procter & Gamble", category: "Stocks", invested: 8000, current: 9100, units: 50, date: "2023-05-15" },
         ],
       },
     ];
 
-    function App() {
-      const [portfolios] = useState(() => {
+    const formatCurrency = (n) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    const formatPct = (n) => (n >= 0 ? "+" : "") + n.toFixed(2) + "%";
+    const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" });
+
+    /* Performance Analytics */
+    const calculatePerformanceMetrics = (investments) => {
+      if (!investments.length) return { roi: 0, volatility: 0, sharpeRatio: 0 };
+      const totalInvested = investments.reduce((s, i) => s + i.invested, 0);
+      const totalCurrent = investments.reduce((s, i) => s + i.current, 0);
+      const roi = totalInvested ? ((totalCurrent - totalInvested) / totalInvested) * 100 : 0;
+      const returns = investments.map(i => ((i.current - i.invested) / i.invested) * 100);
+      const meanReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
+      const variance = returns.reduce((s, r) => s + Math.pow(r - meanReturn, 2), 0) / returns.length;
+      const volatility = Math.sqrt(variance);
+      const sharpeRatio = volatility ? (roi - 2.5) / volatility : 0;
+      return { roi, volatility, sharpeRatio };
+    };
+
+    /* Risk Analysis */
+    const calculateRiskScore = (portfolio) => {
+      const investments = portfolio.investments;
+      if (!investments.length) return 0;
+      const categoryRisks = { Stocks: 8, Crypto: 9, "Mutual Funds": 5, Bonds: 2, "Real Estate": 6, Cash: 1 };
+      const diversification = investments.length > 5 ? 10 : investments.length * 2;
+      const totalCurrent = investments.reduce((s, i) => s + i.current, 0);
+      const weightedRisk = investments.reduce((s, i) => s + (categoryRisks[i.category] || 5) * (i.current / totalCurrent), 0);
+      const riskScore = (weightedRisk + diversification) / 2;
+      return Math.min(100, Math.max(0, riskScore));
+    };
+
+    /* Modal Component */
+    function Modal({ open, onClose, title, children }) {
+      if (!open) return null;
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
+          <div className="absolute inset-0 bg-black bg-opacity-70 backdrop-blur-sm" />
+          <div className="relative w-full max-w-lg mx-4 rounded-2xl overflow-hidden max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}
+            style={{ background: "linear-gradient(145deg, #1e1b4b 0%, #0f172a 100%)", border: "1px solid rgba(99,102,241,0.3)", boxShadow: "0 25px 60px rgba(0,0,0,0.5)" }}>
+            <div className="flex items-center justify-between p-5 sticky top-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", background: "linear-gradient(145deg, #1e1b4b 0%, #0f172a 100%)" }}>
+              <h3 className="text-lg font-semibold text-white">{title}</h3>
+              <button onClick={onClose} className="p-1 rounded-lg text-gray-400 hover:text-white hover:bg-white hover:bg-opacity-10 transition-colors">✕</button>
+            </div>
+            <div className="p-5">{children}</div>
+          </div>
+        </div>
+      );
+    }
+
+    function Field({ label, value, onChange, type = "text", placeholder }) {
+      return (
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-300 mb-1.5">{label}</label>
+          <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
+            className="w-full px-3 py-2.5 rounded-xl text-white text-sm outline-none transition-all"
+            style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
+            onFocus={(e) => (e.target.style.borderColor = "rgba(99,102,241,0.6)")}
+            onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.1)")} />
+        </div>
+      );
+    }
+
+    function Select({ label, value, onChange, options }) {
+      return (
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-300 mb-1.5">{label}</label>
+          <select value={value} onChange={(e) => onChange(e.target.value)}
+            className="w-full px-3 py-2.5 rounded-xl text-white text-sm outline-none transition-all"
+            style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
+            {options.map((o) => <option key={o} value={o} style={{ background: "#1e1b4b" }}>{o}</option>)}
+          </select>
+        </div>
+      );
+    }
+
+    function StatCard({ icon, label, value, sub, color = "#6366f1" }) {
+      return (
+        <div className="rounded-2xl p-5 flex flex-col gap-2 transition-transform hover:scale-105"
+          style={{ background: "linear-gradient(145deg, rgba(30,27,75,0.8) 0%, rgba(15,23,42,0.8) 100%)", border: "1px solid rgba(255,255,255,0.06)", boxShadow: "0 4px 20px rgba(0,0,0,0.2)" }}>
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-xl text-xl" style={{ background: `${color}22` }}>{icon}</div>
+            <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">{label}</span>
+          </div>
+          <div className="text-2xl font-bold text-white">{value}</div>
+          {sub && <div className="text-sm" style={{ color }}>{sub}</div>}
+        </div>
+      );
+    }
+
+    /* Main Dashboard */
+    function FinancialDashboard() {
+      const [portfolios, setPortfolios] = useState(() => {
         const saved = localStorage.getItem("finportal_portfolios");
         return saved ? JSON.parse(saved) : initialPortfolios;
       });
+      const [categories, setCategories] = useState(() => {
+        const saved = localStorage.getItem("finportal_categories");
+        return saved ? JSON.parse(saved) : defaultCategories;
+      });
+      const [goals, setGoals] = useState(() => {
+        const saved = localStorage.getItem("finportal_goals");
+        return saved ? JSON.parse(saved) : [];
+      });
+      const [alerts, setAlerts] = useState(() => {
+        const saved = localStorage.getItem("finportal_alerts");
+        return saved ? JSON.parse(saved) : [];
+      });
+      const [view, setView] = useState("dashboard");
+      const [editingId, setEditingId] = useState(null);
+      const [editingInvId, setEditingInvId] = useState(null);
+      const [showGoals, setShowGoals] = useState(false);
+      const [showAlerts, setShowAlerts] = useState(false);
+      const [showReports, setShowReports] = useState(false);
+      const [searchTerm, setSearchTerm] = useState("");
+      const [sortBy, setSortBy] = useState("name");
+      const [newGoal, setNewGoal] = useState({ name: "", targetValue: "", portfolio: portfolios[0]?.id || 1 });
+      const [newAlert, setNewAlert] = useState({ name: "", condition: "loss", threshold: 10, portfolio: portfolios[0]?.id || 1 });
+      const [newPortfolio, setNewPortfolio] = useState({ name: "", description: "" });
+      const [newInvestment, setNewInvestment] = useState({ name: "", category: "Stocks", invested: 0, current: 0, units: 0 });
 
+      // Save to localStorage
+      useMemo(() => { localStorage.setItem("finportal_portfolios", JSON.stringify(portfolios)); }, [portfolios]);
+      useMemo(() => { localStorage.setItem("finportal_goals", JSON.stringify(goals)); }, [goals]);
+      useMemo(() => { localStorage.setItem("finportal_alerts", JSON.stringify(alerts)); }, [alerts]);
+
+      // Portfolio management
+      const addPortfolio = () => {
+        if (!newPortfolio.name) return;
+        const portfolio = { id: Date.now(), name: newPortfolio.name, description: newPortfolio.description, investments: [] };
+        setPortfolios([...portfolios, portfolio]);
+        setNewPortfolio({ name: "", description: "" });
+      };
+
+      const deletePortfolio = (id) => {
+        setPortfolios(portfolios.filter(p => p.id !== id));
+      };
+
+      const addInvestment = (portfolioId) => {
+        if (!newInvestment.name) return;
+        setPortfolios(portfolios.map(p => {
+          if (p.id === portfolioId) {
+            return { ...p, investments: [...p.investments, { ...newInvestment, id: Date.now(), date: new Date().toISOString().split('T')[0] }] };
+          }
+          return p;
+        }));
+        setNewInvestment({ name: "", category: "Stocks", invested: 0, current: 0, units: 0 });
+      };
+
+      const deleteInvestment = (portfolioId, investmentId) => {
+        setPortfolios(portfolios.map(p => {
+          if (p.id === portfolioId) {
+            return { ...p, investments: p.investments.filter(i => i.id !== investmentId) };
+          }
+          return p;
+        }));
+      };
+
+      const updateInvestment = (portfolioId, investmentId, updates) => {
+        setPortfolios(portfolios.map(p => {
+          if (p.id === portfolioId) {
+            return { ...p, investments: p.investments.map(i => i.id === investmentId ? { ...i, ...updates } : i) };
+          }
+          return p;
+        }));
+      };
+
+      // Goals & Alerts
+      const addGoal = () => {
+        if (!newGoal.name || !newGoal.targetValue) return;
+        setGoals([...goals, { id: Date.now(), ...newGoal, targetValue: parseFloat(newGoal.targetValue) }]);
+        setNewGoal({ name: "", targetValue: "", portfolio: portfolios[0]?.id || 1 });
+      };
+
+      const deleteGoal = (id) => setGoals(goals.filter(g => g.id !== id));
+
+      const addAlert = () => {
+        if (!newAlert.name) return;
+        setAlerts([...alerts, { id: Date.now(), ...newAlert, threshold: parseFloat(newAlert.threshold) }]);
+        setNewAlert({ name: "", condition: "loss", threshold: 10, portfolio: portfolios[0]?.id || 1 });
+      };
+
+      const deleteAlert = (id) => setAlerts(alerts.filter(a => a.id !== id));
+
+      // Export/Import
+      const exportData = () => {
+        const data = { portfolios, goals, alerts, categories };
+        const dataStr = JSON.stringify(data, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `finportal-export-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+      };
+
+      const importData = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const data = JSON.parse(event.target.result);
+            if (data.portfolios) setPortfolios(data.portfolios);
+            if (data.goals) setGoals(data.goals);
+            if (data.alerts) setAlerts(data.alerts);
+            if (data.categories) setCategories(data.categories);
+            alert("Data imported successfully!");
+          } catch (error) {
+            alert("Failed to import data. Please check the file format.");
+          }
+        };
+        reader.readAsText(file);
+      };
+
+      const generateReport = () => {
+        const totalInvested = portfolios.reduce((s, p) => s + p.investments.reduce((s2, i) => s2 + i.invested, 0), 0);
+        const totalCurrent = portfolios.reduce((s, p) => s + p.investments.reduce((s2, i) => s2 + i.current, 0), 0);
+        const totalGain = totalCurrent - totalInvested;
+        const reportText = `FinPortal Report - ${new Date().toLocaleDateString()}\n\nTotal Invested: ${formatCurrency(totalInvested)}\nCurrent Value: ${formatCurrency(totalCurrent)}\nTotal Gain/Loss: ${formatCurrency(totalGain)} (${formatPct((totalGain / totalInvested) * 100)})\n\nPortfolios: ${portfolios.length}\nInvestments: ${portfolios.reduce((s, p) => s + p.investments.length, 0)}`;
+        const blob = new Blob([reportText], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `finportal-report-${new Date().toISOString().split('T')[0]}.txt`;
+        a.click();
+      };
+
+      // Stats
       const stats = useMemo(() => {
         let invested = 0, current = 0;
         portfolios.forEach((p) => p.investments.forEach((i) => { invested += i.invested; current += i.current; }));
-        return { invested, current, gain: current - invested };
+        return { invested, current, gain: current - invested, gainPct: invested ? ((current - invested) / invested) * 100 : 0 };
       }, [portfolios]);
 
-      return (
-        <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #0c0a1d 0%, #111827 50%)", color: "#fff", padding: "40px 20px", fontFamily: "system-ui" }}>
-          <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-            <h1 style={{ fontSize: "40px", marginBottom: "30px" }}>💼 FinPortal</h1>
+      // Filtered data
+      const filteredPortfolios = useMemo(() => {
+        return portfolios.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.investments.some(i => i.name.toLowerCase().includes(searchTerm.toLowerCase())));
+      }, [portfolios, searchTerm]);
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "20px", marginBottom: "40px" }}>
-              <div style={{ background: "rgba(99, 102, 241, 0.2)", padding: "20px", borderRadius: "12px", border: "1px solid rgba(99, 102, 241, 0.3)" }}>
-                <div style={{ color: "#9ca3af", fontSize: "12px", marginBottom: "8px" }}>TOTAL INVESTED</div>
-                <div style={{ fontSize: "28px", fontWeight: "bold" }}>${(stats.invested / 1000000).toFixed(2)}M</div>
-              </div>
-              <div style={{ background: "rgba(99, 102, 241, 0.2)", padding: "20px", borderRadius: "12px", border: "1px solid rgba(99, 102, 241, 0.3)" }}>
-                <div style={{ color: "#9ca3af", fontSize: "12px", marginBottom: "8px" }}>CURRENT VALUE</div>
-                <div style={{ fontSize: "28px", fontWeight: "bold" }}>${(stats.current / 1000000).toFixed(2)}M</div>
-              </div>
-              <div style={{ background: stats.gain >= 0 ? "rgba(16, 185, 129, 0.2)" : "rgba(239, 68, 68, 0.2)", padding: "20px", borderRadius: "12px", border: stats.gain >= 0 ? "1px solid rgba(16, 185, 129, 0.3)" : "1px solid rgba(239, 68, 68, 0.3)" }}>
-                <div style={{ color: "#9ca3af", fontSize: "12px", marginBottom: "8px" }}>GAIN/LOSS</div>
-                <div style={{ fontSize: "28px", fontWeight: "bold", color: stats.gain >= 0 ? "#10b981" : "#ef4444" }}>${(stats.gain / 1000).toFixed(0)}K</div>
-              </div>
-              <div style={{ background: "rgba(99, 102, 241, 0.2)", padding: "20px", borderRadius: "12px", border: "1px solid rgba(99, 102, 241, 0.3)" }}>
-                <div style={{ color: "#9ca3af", fontSize: "12px", marginBottom: "8px" }}>PORTFOLIOS</div>
-                <div style={{ fontSize: "28px", fontWeight: "bold" }}>{portfolios.length}</div>
-              </div>
+      return (
+        <div className="min-h-screen p-6 md:p-8">
+          <div className="max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="mb-8">
+              <h1 className="text-4xl font-bold mb-2">💼 FinPortal</h1>
+              <p className="text-gray-400">Advanced portfolio management with analytics and insights</p>
             </div>
 
-            {portfolios.map((p) => {
-              const invested = p.investments.reduce((s, i) => s + i.invested, 0);
-              const current = p.investments.reduce((s, i) => s + i.current, 0);
-              const gain = current - invested;
-              return (
-                <div key={p.id} style={{ background: "rgba(30, 27, 75, 0.6)", padding: "24px", borderRadius: "12px", marginBottom: "20px", border: "1px solid rgba(99, 102, 241, 0.2)" }}>
-                  <h2 style={{ fontSize: "20px", marginBottom: "8px" }}>{p.name}</h2>
-                  <p style={{ color: "#9ca3af", marginBottom: "16px", fontSize: "14px" }}>{p.description}</p>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "12px" }}>
-                    <div><div style={{ color: "#9ca3af", fontSize: "12px" }}>Invested</div><div style={{ fontSize: "18px", fontWeight: "bold" }}>${(invested / 1000).toFixed(1)}K</div></div>
-                    <div><div style={{ color: "#9ca3af", fontSize: "12px" }}>Current</div><div style={{ fontSize: "18px", fontWeight: "bold" }}>${(current / 1000).toFixed(1)}K</div></div>
-                    <div><div style={{ color: "#9ca3af", fontSize: "12px" }}>Gain/Loss</div><div style={{ fontSize: "18px", fontWeight: "bold", color: gain >= 0 ? "#10b981" : "#ef4444" }}>${(gain / 1000).toFixed(1)}K</div></div>
-                    <div><div style={{ color: "#9ca3af", fontSize: "12px" }}>Items</div><div style={{ fontSize: "18px", fontWeight: "bold" }}>{p.investments.length}</div></div>
+            {/* Navigation */}
+            <div className="flex flex-wrap gap-3 mb-8 border-b border-gray-700 pb-4">
+              <button onClick={() => { setView("dashboard"); setSearchTerm(""); }} className={`px-4 py-2 rounded-lg font-medium transition-colors ${view === "dashboard" ? "bg-indigo-600 text-white" : "text-gray-400 hover:text-white"}`}>📊 Dashboard</button>
+              <button onClick={() => { setView("analytics"); setSearchTerm(""); }} className={`px-4 py-2 rounded-lg font-medium transition-colors ${view === "analytics" ? "bg-indigo-600 text-white" : "text-gray-400 hover:text-white"}`}>📈 Analytics</button>
+              <button onClick={() => setShowGoals(!showGoals)} className="px-4 py-2 rounded-lg font-medium text-gray-400 hover:text-white transition-colors">🎯 Goals</button>
+              <button onClick={() => setShowAlerts(!showAlerts)} className="px-4 py-2 rounded-lg font-medium text-gray-400 hover:text-white transition-colors">⚠️ Alerts</button>
+              <button onClick={() => setShowReports(!showReports)} className="px-4 py-2 rounded-lg font-medium text-gray-400 hover:text-white transition-colors">📄 Reports</button>
+              <button onClick={exportData} className="px-4 py-2 rounded-lg font-medium text-gray-400 hover:text-white transition-colors">⬇️ Export</button>
+              <label className="px-4 py-2 rounded-lg font-medium text-gray-400 hover:text-white transition-colors cursor-pointer">
+                ⬆️ Import
+                <input type="file" accept=".json" onChange={importData} style={{ display: "none" }} />
+              </label>
+            </div>
+
+            {/* Dashboard View */}
+            {view === "dashboard" && (
+              <>
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                  <StatCard icon="💵" label="Total Invested" value={formatCurrency(stats.invested)} sub={`${portfolios.length} portfolio(s)`} color="#6366f1" />
+                  <StatCard icon="📊" label="Current Value" value={formatCurrency(stats.current)} sub={`${portfolios.reduce((s, p) => s + p.investments.length, 0)} investments`} color="#22d3ee" />
+                  <StatCard icon={stats.gain >= 0 ? "📈" : "📉"} label="Gain/Loss" value={formatCurrency(stats.gain)} sub={formatPct(stats.gainPct)} color={stats.gain >= 0 ? "#10b981" : "#ef4444"} />
+                  <StatCard icon="🎯" label="Active Goals" value={goals.length} sub={`${alerts.length} alerts set`} color="#f59e0b" />
+                </div>
+
+                {/* Add Portfolio */}
+                <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-2xl p-6 mb-8 border border-indigo-800">
+                  <h2 className="text-xl font-bold mb-4">➕ Add New Portfolio</h2>
+                  <div className="flex flex-col md:flex-row gap-3">
+                    <Field label="Portfolio Name" value={newPortfolio.name} onChange={(val) => setNewPortfolio({...newPortfolio, name: val})} placeholder="e.g., Emergency Fund" />
+                    <Field label="Description" value={newPortfolio.description} onChange={(val) => setNewPortfolio({...newPortfolio, description: val})} placeholder="e.g., For emergencies" />
+                    <button onClick={addPortfolio} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-medium whitespace-nowrap transition-colors h-fit">Create</button>
                   </div>
                 </div>
-              );
-            })}
 
-            <div style={{ background: "rgba(99, 102, 241, 0.1)", padding: "20px", borderRadius: "12px", textAlign: "center", marginTop: "40px", border: "1px dashed rgba(99, 102, 241, 0.3)" }}>
-              <p style={{ color: "#9ca3af" }}>✨ FinPortal is loading with your portfolio data</p>
-              <p style={{ color: "#6b7280", fontSize: "12px", marginTop: "8px" }}>Data saved automatically to your browser</p>
-            </div>
+                {/* Portfolios */}
+                <div className="space-y-6">
+                  {filteredPortfolios.map((portfolio) => {
+                    const invested = portfolio.investments.reduce((s, i) => s + i.invested, 0);
+                    const current = portfolio.investments.reduce((s, i) => s + i.current, 0);
+                    const gain = current - invested;
+                    const metrics = calculatePerformanceMetrics(portfolio.investments);
+                    return (
+                      <div key={portfolio.id} className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h2 className="text-2xl font-bold">{portfolio.name}</h2>
+                            <p className="text-gray-400 text-sm">{portfolio.description}</p>
+                          </div>
+                          <button onClick={() => deletePortfolio(portfolio.id)} className="px-3 py-1 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg text-sm transition-colors">🗑️ Delete</button>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+                          <StatCard icon="📌" label="Invested" value={formatCurrency(invested)} color="#6366f1" />
+                          <StatCard icon="📊" label="Current" value={formatCurrency(current)} color="#22d3ee" />
+                          <StatCard icon={gain >= 0 ? "📈" : "📉"} label="Gain/Loss" value={formatCurrency(gain)} sub={formatPct((gain / (invested || 1)) * 100)} color={gain >= 0 ? "#10b981" : "#ef4444"} />
+                          <StatCard icon="📈" label="ROI" value={formatPct(metrics.roi)} color="#f59e0b" />
+                          <StatCard icon="⚡" label="Risk" value={calculateRiskScore(portfolio).toFixed(0)} sub="/100" color="#ec4899" />
+                        </div>
+
+                        {/* Add Investment */}
+                        <div className="bg-slate-700/30 rounded-xl p-4 mb-4 border border-slate-600">
+                          <h3 className="font-semibold mb-3">Add Investment</h3>
+                          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                            <Field value={newInvestment.name} onChange={(val) => setNewInvestment({...newInvestment, name: val})} placeholder="Name" />
+                            <Select value={newInvestment.category} onChange={(val) => setNewInvestment({...newInvestment, category: val})} options={categories} />
+                            <Field type="number" value={newInvestment.invested} onChange={(val) => setNewInvestment({...newInvestment, invested: parseFloat(val) || 0})} placeholder="Invested" />
+                            <Field type="number" value={newInvestment.current} onChange={(val) => setNewInvestment({...newInvestment, current: parseFloat(val) || 0})} placeholder="Current" />
+                            <button onClick={() => addInvestment(portfolio.id)} className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-sm font-medium whitespace-nowrap">Add</button>
+                          </div>
+                        </div>
+
+                        {/* Investments Table */}
+                        {portfolio.investments.length > 0 && (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b border-slate-600">
+                                  <th className="text-left py-2 px-3">Investment</th>
+                                  <th className="text-right py-2 px-3">Category</th>
+                                  <th className="text-right py-2 px-3">Invested</th>
+                                  <th className="text-right py-2 px-3">Current</th>
+                                  <th className="text-right py-2 px-3">Gain/Loss</th>
+                                  <th className="text-center py-2 px-3">Actions</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {portfolio.investments.map((inv) => {
+                                  const gain = inv.current - inv.invested;
+                                  const gainPct = (gain / (inv.invested || 1)) * 100;
+                                  return (
+                                    <tr key={inv.id} className="border-b border-slate-700 hover:bg-slate-700/30">
+                                      <td className="py-3 px-3">{CATEGORY_ICONS[inv.category]} {inv.name}</td>
+                                      <td className="text-right py-3 px-3">{inv.category}</td>
+                                      <td className="text-right py-3 px-3">{formatCurrency(inv.invested)}</td>
+                                      <td className="text-right py-3 px-3">{formatCurrency(inv.current)}</td>
+                                      <td className="text-right py-3 px-3" style={{color: gain >= 0 ? "#10b981" : "#ef4444"}}>{formatCurrency(gain)} ({formatPct(gainPct)})</td>
+                                      <td className="text-center py-3 px-3">
+                                        <button onClick={() => deleteInvestment(portfolio.id, inv.id)} className="text-red-400 hover:text-red-300">🗑️</button>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
+            {/* Analytics View */}
+            {view === "analytics" && (
+              <div className="space-y-6">
+                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700">
+                  <h2 className="text-2xl font-bold mb-4">📊 Performance Analytics</h2>
+                  <div className="mb-4">
+                    <input type="text" placeholder="Search portfolios..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full px-4 py-2 rounded-lg text-white text-sm" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }} />
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-600">
+                          <th className="text-left py-2 px-3">Portfolio</th>
+                          <th className="text-right py-2 px-3">ROI (%)</th>
+                          <th className="text-right py-2 px-3">Volatility (%)</th>
+                          <th className="text-right py-2 px-3">Sharpe Ratio</th>
+                          <th className="text-right py-2 px-3">Risk Score</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredPortfolios.map((p) => {
+                          const metrics = calculatePerformanceMetrics(p.investments);
+                          const risk = calculateRiskScore(p);
+                          return (
+                            <tr key={p.id} className="border-b border-slate-700 hover:bg-slate-700/30">
+                              <td className="py-3 px-3 font-medium">{p.name}</td>
+                              <td className="text-right py-3 px-3" style={{color: metrics.roi >= 0 ? "#10b981" : "#ef4444"}}>{formatPct(metrics.roi)}</td>
+                              <td className="text-right py-3 px-3">{metrics.volatility.toFixed(2)}%</td>
+                              <td className="text-right py-3 px-3">{metrics.sharpeRatio.toFixed(3)}</td>
+                              <td className="text-right py-3 px-3">
+                                <div className="flex items-center gap-2 justify-end">
+                                  <div className="w-16 h-2 rounded bg-slate-700">
+                                    <div className="h-full rounded" style={{width: `${Math.min(risk, 100)}%`, background: risk > 70 ? "#ef4444" : risk > 40 ? "#f59e0b" : "#10b981"}}></div>
+                                  </div>
+                                  <span>{risk.toFixed(0)}</span>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Goals Modal */}
+            <Modal open={showGoals} onClose={() => setShowGoals(false)} title="🎯 Portfolio Goals">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold mb-3">Add Goal</h3>
+                  <Field label="Goal Name" value={newGoal.name} onChange={(val) => setNewGoal({...newGoal, name: val})} placeholder="e.g., $1M Net Worth" />
+                  <Field label="Target Value" type="number" value={newGoal.targetValue} onChange={(val) => setNewGoal({...newGoal, targetValue: val})} placeholder="e.g., 1000000" />
+                  <Select label="Portfolio" value={newGoal.portfolio} onChange={(val) => setNewGoal({...newGoal, portfolio: parseInt(val)})} options={portfolios.map(p => p.id.toString())} />
+                  <button onClick={addGoal} className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-medium">Create Goal</button>
+                </div>
+                {goals.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-3">Your Goals</h3>
+                    {goals.map(g => (
+                      <div key={g.id} className="flex justify-between items-center p-3 bg-slate-700/30 rounded-lg mb-2">
+                        <div>
+                          <p className="font-medium">{g.name}</p>
+                          <p className="text-sm text-gray-400">Target: {formatCurrency(g.targetValue)}</p>
+                        </div>
+                        <button onClick={() => deleteGoal(g.id)} className="text-red-400 hover:text-red-300">🗑️</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Modal>
+
+            {/* Alerts Modal */}
+            <Modal open={showAlerts} onClose={() => setShowAlerts(false)} title="⚠️ Investment Alerts">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold mb-3">Set Alert</h3>
+                  <Field label="Alert Name" value={newAlert.name} onChange={(val) => setNewAlert({...newAlert, name: val})} placeholder="e.g., High Risk Alert" />
+                  <Select label="Condition" value={newAlert.condition} onChange={(val) => setNewAlert({...newAlert, condition: val})} options={["loss", "gain", "volatility"]} />
+                  <Field label="Threshold (%)" type="number" value={newAlert.threshold} onChange={(val) => setNewAlert({...newAlert, threshold: val})} placeholder="e.g., 10" />
+                  <button onClick={addAlert} className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-medium">Create Alert</button>
+                </div>
+                {alerts.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-3">Active Alerts</h3>
+                    {alerts.map(a => (
+                      <div key={a.id} className="flex justify-between items-center p-3 bg-slate-700/30 rounded-lg mb-2">
+                        <div>
+                          <p className="font-medium">{a.name}</p>
+                          <p className="text-sm text-gray-400">When {a.condition} > {a.threshold}%</p>
+                        </div>
+                        <button onClick={() => deleteAlert(a.id)} className="text-red-400 hover:text-red-300">🗑️</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Modal>
+
+            {/* Reports Modal */}
+            <Modal open={showReports} onClose={() => setShowReports(false)} title="📄 Generate Report">
+              <div className="space-y-4">
+                <p className="text-gray-300">Generate a comprehensive report of your portfolio performance and export it as a document.</p>
+                <button onClick={generateReport} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-medium">📥 Download Report</button>
+                <p className="text-sm text-gray-400 text-center">Report will be saved as a text file with your portfolio summary</p>
+              </div>
+            </Modal>
           </div>
         </div>
       );
     }
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
+    root.render(<FinancialDashboard />);
   </script>
 </body>
 </html>
