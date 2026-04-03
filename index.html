@@ -77,9 +77,13 @@
       },
     ];
 
-    const formatCurrency = (n) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    const formatCurrency = (n) => {
+      if (n >= 10000000) return "₹" + (n / 10000000).toFixed(2) + " Cr";
+      if (n >= 100000) return "₹" + (n / 100000).toFixed(2) + " L";
+      return "₹" + n.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    };
     const formatPct = (n) => (n >= 0 ? "+" : "") + n.toFixed(2) + "%";
-    const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" });
+    const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "2-digit" });
 
     const calculatePerformanceMetrics = (investments) => {
       if (!investments.length) return { roi: 0, volatility: 0, sharpeRatio: 0 };
