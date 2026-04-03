@@ -618,26 +618,32 @@
                     </div>
                   </div>
                   <div className="space-y-2">
-                    {useMemo(() => {
+                    {(() => {
                       let sorted = [...portfolios];
                       const getAmount = (p) => p.investments.reduce((s, i) => s + i.current, 0);
                       const getUser = (p) => p.description?.split("Account holder: ")[1] || p.name;
 
                       switch(sortBy) {
                         case "name":
-                          return sorted.sort((a, b) => a.name.localeCompare(b.name));
+                          sorted.sort((a, b) => a.name.localeCompare(b.name));
+                          break;
                         case "user":
-                          return sorted.sort((a, b) => getUser(a).localeCompare(getUser(b)));
+                          sorted.sort((a, b) => getUser(a).localeCompare(getUser(b)));
+                          break;
                         case "amount-high":
-                          return sorted.sort((a, b) => getAmount(b) - getAmount(a));
+                          sorted.sort((a, b) => getAmount(b) - getAmount(a));
+                          break;
                         case "amount-low":
-                          return sorted.sort((a, b) => getAmount(a) - getAmount(b));
+                          sorted.sort((a, b) => getAmount(a) - getAmount(b));
+                          break;
                         case "bank":
-                          return sorted.sort((a, b) => a.name.localeCompare(b.name));
+                          sorted.sort((a, b) => a.name.localeCompare(b.name));
+                          break;
                         default:
-                          return sorted;
+                          break;
                       }
-                    }, [portfolios, sortBy]).map((p) => {
+                      return sorted;
+                    })().map((p) => {
                       const invested = p.investments.reduce((s, i) => s + i.invested, 0);
                       const current = p.investments.reduce((s, i) => s + i.current, 0);
                       const gain = current - invested;
