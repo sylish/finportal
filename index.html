@@ -17,6 +17,22 @@
 <body>
   <div id="root"></div>
 
+  <script>
+    // Clear corrupted localStorage on load
+    try {
+      const test = localStorage.getItem("finportal_portfolios");
+      if (test) {
+        JSON.parse(test); // Test if valid
+      }
+    } catch (e) {
+      console.warn("Clearing corrupted localStorage...");
+      localStorage.removeItem("finportal_portfolios");
+      localStorage.removeItem("finportal_goals");
+      localStorage.removeItem("finportal_alerts");
+      localStorage.removeItem("finportal_categories");
+    }
+  </script>
+
   <script type="text/babel">
     const { useState, useMemo, useCallback } = React;
 
@@ -151,20 +167,55 @@
     /* Main Dashboard */
     function FinancialDashboard() {
       const [portfolios, setPortfolios] = useState(() => {
-        const saved = localStorage.getItem("finportal_portfolios");
-        return saved ? JSON.parse(saved) : initialPortfolios;
+        try {
+          const saved = localStorage.getItem("finportal_portfolios");
+          if (!saved) return initialPortfolios;
+          const parsed = JSON.parse(saved);
+          // Validate structure
+          if (!Array.isArray(parsed)) return initialPortfolios;
+          return parsed.map(p => ({
+            id: p.id || Date.now(),
+            name: p.name || "Portfolio",
+            description: p.description || "",
+            investments: Array.isArray(p.investments) ? p.investments.map(i => ({
+              id: i.id || Date.now(),
+              name: i.name || "Investment",
+              category: i.category || "Stocks",
+              invested: parseFloat(i.invested) || 0,
+              current: parseFloat(i.current) || 0,
+              units: parseFloat(i.units) || 1,
+              date: i.date || "2024-01-01"
+            })) : []
+          }));
+        } catch (e) {
+          console.error("Error loading portfolios:", e);
+          localStorage.removeItem("finportal_portfolios");
+          return initialPortfolios;
+        }
       });
       const [categories, setCategories] = useState(() => {
-        const saved = localStorage.getItem("finportal_categories");
-        return saved ? JSON.parse(saved) : defaultCategories;
+        try {
+          const saved = localStorage.getItem("finportal_categories");
+          return saved && Array.isArray(JSON.parse(saved)) ? JSON.parse(saved) : defaultCategories;
+        } catch {
+          return defaultCategories;
+        }
       });
       const [goals, setGoals] = useState(() => {
-        const saved = localStorage.getItem("finportal_goals");
-        return saved ? JSON.parse(saved) : [];
+        try {
+          const saved = localStorage.getItem("finportal_goals");
+          return saved && Array.isArray(JSON.parse(saved)) ? JSON.parse(saved) : [];
+        } catch {
+          return [];
+        }
       });
       const [alerts, setAlerts] = useState(() => {
-        const saved = localStorage.getItem("finportal_alerts");
-        return saved ? JSON.parse(saved) : [];
+        try {
+          const saved = localStorage.getItem("finportal_alerts");
+          return saved && Array.isArray(JSON.parse(saved)) ? JSON.parse(saved) : [];
+        } catch {
+          return [];
+        }
       });
       const [view, setView] = useState("dashboard");
       const [editingId, setEditingId] = useState(null);
@@ -380,7 +431,20 @@
 
       // Filtered data
       const filteredPortfolios = useMemo(() => {
-        return portfolios.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.investments.some(i => i.name.toLowerCase().includes(searchTerm.toLowerCase())));
+        try {
+          return portfolios.filter(p => {
+            const pName = (p.name || "").toLowerCase();
+            const pMatch = pName.includes((searchTerm || "").toLowerCase());
+            const invMatch = p.investments && p.investments.some(i => {
+              const iName = (i.name || "").toLowerCase();
+              return iName.includes((searchTerm || "").toLowerCase());
+            });
+            return pMatch || invMatch;
+          });
+        } catch (e) {
+          console.error("Filter error:", e);
+          return portfolios;
+        }
       }, [portfolios, searchTerm]);
 
       return (
