@@ -227,6 +227,10 @@
       const [showAlerts, setShowAlerts] = useState(false);
       const [showReports, setShowReports] = useState(false);
       const [searchTerm, setSearchTerm] = useState("");
+      const [editingPortfolioId, setEditingPortfolioId] = useState(null);
+      const [editingInvestmentId, setEditingInvestmentId] = useState(null);
+      const [editPortfolioData, setEditPortfolioData] = useState({ name: "", description: "" });
+      const [editInvestmentData, setEditInvestmentData] = useState({ name: "", category: "Stocks", invested: 0, current: 0, units: 0 });
       const [newGoal, setNewGoal] = useState({ name: "", targetValue: "", portfolio: portfolios[0]?.id || 1 });
       const [newAlert, setNewAlert] = useState({ name: "", condition: "loss", threshold: 10, portfolio: portfolios[0]?.id || 1 });
       const [newPortfolio, setNewPortfolio] = useState({ name: "", description: "" });
@@ -306,6 +310,41 @@
           }
           return p;
         }));
+      };
+
+      const startEditPortfolio = (portfolio) => {
+        setEditingPortfolioId(portfolio.id);
+        setEditPortfolioData({ name: portfolio.name, description: portfolio.description });
+      };
+
+      const saveEditPortfolio = (portfolioId) => {
+        setPortfolios(portfolios.map(p => {
+          if (p.id === portfolioId) {
+            return { ...p, ...editPortfolioData };
+          }
+          return p;
+        }));
+        setEditingPortfolioId(null);
+      };
+
+      const cancelEditPortfolio = () => {
+        setEditingPortfolioId(null);
+        setEditPortfolioData({ name: "", description: "" });
+      };
+
+      const startEditInvestment = (portfolioId, investment) => {
+        setEditingInvestmentId(investment.id);
+        setEditInvestmentData({ name: investment.name, category: investment.category, invested: investment.invested, current: investment.current, units: investment.units });
+      };
+
+      const saveEditInvestment = (portfolioId, investmentId) => {
+        updateInvestment(portfolioId, investmentId, editInvestmentData);
+        setEditingInvestmentId(null);
+      };
+
+      const cancelEditInvestment = () => {
+        setEditingInvestmentId(null);
+        setEditInvestmentData({ name: "", category: "Stocks", invested: 0, current: 0, units: 0 });
       };
 
       // Goals & Alerts
@@ -602,14 +641,31 @@
                     const current = portfolio.investments.reduce((s, i) => s + i.current, 0);
                     const gain = current - invested;
                     const metrics = calculatePerformanceMetrics(portfolio.investments);
+                    const isEditing = editingPortfolioId === portfolio.id;
                     return (
                       <div key={portfolio.id} className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700">
                         <div className="flex justify-between items-start mb-4">
-                          <div>
-                            <h2 className="text-2xl font-bold">{portfolio.name}</h2>
-                            <p className="text-gray-400 text-sm">{portfolio.description}</p>
+                          {isEditing ? (
+                            <div className="flex-1 mr-4">
+                              <Field label="Portfolio Name" value={editPortfolioData.name} onChange={(val) => setEditPortfolioData({...editPortfolioData, name: val})} />
+                              <Field label="Description" value={editPortfolioData.description} onChange={(val) => setEditPortfolioData({...editPortfolioData, description: val})} />
+                              <div className="flex gap-2">
+                                <button onClick={() => saveEditPortfolio(portfolio.id)} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium">✓ Save</button>
+                                <button onClick={cancelEditPortfolio} className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm font-medium">✕ Cancel</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <h2 className="text-2xl font-bold">{portfolio.name}</h2>
+                              <p className="text-gray-400 text-sm">{portfolio.description}</p>
+                            </div>
+                          )}
+                          <div className="flex gap-2">
+                            {!isEditing && (
+                              <button onClick={() => startEditPortfolio(portfolio)} className="px-3 py-1 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded-lg text-sm transition-colors">✏️ Edit</button>
+                            )}
+                            <button onClick={() => deletePortfolio(portfolio.id)} className="px-3 py-1 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg text-sm transition-colors">🗑️ Delete</button>
                           </div>
-                          <button onClick={() => deletePortfolio(portfolio.id)} className="px-3 py-1 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg text-sm transition-colors">🗑️ Delete</button>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
                           <StatCard icon="📌" label="Invested" value={formatCurrency(invested)} color="#6366f1" />
@@ -649,16 +705,36 @@
                                 {portfolio.investments.map((inv) => {
                                   const gain = inv.current - inv.invested;
                                   const gainPct = (gain / (inv.invested || 1)) * 100;
+                                  const isEditingInv = editingInvestmentId === inv.id;
                                   return (
                                     <tr key={inv.id} className="border-b border-slate-700 hover:bg-slate-700/30">
-                                      <td className="py-3 px-3">{CATEGORY_ICONS[inv.category]} {inv.name}</td>
-                                      <td className="text-right py-3 px-3">{inv.category}</td>
-                                      <td className="text-right py-3 px-3">{formatCurrency(inv.invested)}</td>
-                                      <td className="text-right py-3 px-3">{formatCurrency(inv.current)}</td>
-                                      <td className="text-right py-3 px-3" style={{color: gain >= 0 ? "#10b981" : "#ef4444"}}>{formatCurrency(gain)} ({formatPct(gainPct)})</td>
-                                      <td className="text-center py-3 px-3">
-                                        <button onClick={() => deleteInvestment(portfolio.id, inv.id)} className="text-red-400 hover:text-red-300">🗑️</button>
-                                      </td>
+                                      {isEditingInv ? (
+                                        <>
+                                          <td className="py-3 px-3"><input type="text" value={editInvestmentData.name} onChange={(e) => setEditInvestmentData({...editInvestmentData, name: e.target.value})} className="w-full px-2 py-1 rounded bg-slate-600 text-white text-sm" /></td>
+                                          <td className="py-3 px-3"><select value={editInvestmentData.category} onChange={(e) => setEditInvestmentData({...editInvestmentData, category: e.target.value})} className="w-full px-2 py-1 rounded bg-slate-600 text-white text-sm"><option value="Stocks">Stocks</option><option value="Bonds">Bonds</option><option value="Mutual Funds">Mutual Funds</option><option value="Real Estate">Real Estate</option><option value="Cash">Cash</option><option value="Crypto">Crypto</option></select></td>
+                                          <td className="py-3 px-3"><input type="number" value={editInvestmentData.invested} onChange={(e) => setEditInvestmentData({...editInvestmentData, invested: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 rounded bg-slate-600 text-white text-sm text-right" /></td>
+                                          <td className="py-3 px-3"><input type="number" value={editInvestmentData.current} onChange={(e) => setEditInvestmentData({...editInvestmentData, current: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 rounded bg-slate-600 text-white text-sm text-right" /></td>
+                                          <td className="py-3 px-3 text-center">
+                                            <button onClick={() => saveEditInvestment(portfolio.id, inv.id)} className="text-green-400 hover:text-green-300 mr-2">✓</button>
+                                            <button onClick={cancelEditInvestment} className="text-gray-400 hover:text-gray-300">✕</button>
+                                          </td>
+                                          <td className="text-center py-3 px-3">
+                                            <button onClick={() => deleteInvestment(portfolio.id, inv.id)} className="text-red-400 hover:text-red-300">🗑️</button>
+                                          </td>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <td className="py-3 px-3">{CATEGORY_ICONS[inv.category]} {inv.name}</td>
+                                          <td className="text-right py-3 px-3">{inv.category}</td>
+                                          <td className="text-right py-3 px-3">{formatCurrency(inv.invested)}</td>
+                                          <td className="text-right py-3 px-3">{formatCurrency(inv.current)}</td>
+                                          <td className="text-right py-3 px-3" style={{color: gain >= 0 ? "#10b981" : "#ef4444"}}>{formatCurrency(gain)} ({formatPct(gainPct)})</td>
+                                          <td className="text-center py-3 px-3">
+                                            <button onClick={() => startEditInvestment(portfolio.id, inv)} className="text-blue-400 hover:text-blue-300 mr-2">✏️</button>
+                                            <button onClick={() => deleteInvestment(portfolio.id, inv.id)} className="text-red-400 hover:text-red-300">🗑️</button>
+                                          </td>
+                                        </>
+                                      )}
                                     </tr>
                                   );
                                 })}
