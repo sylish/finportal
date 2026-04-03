@@ -254,19 +254,89 @@
         a.click();
       };
 
+      // Migrate old wealth data format to new FinPortal format
+      const migrateOldFormat = (oldData) => {
+        if (!oldData.portfolios || !Array.isArray(oldData.portfolios)) return oldData;
+
+        // Check if this is old format (has bankName or userName fields)
+        const isOldFormat = oldData.portfolios.some(p => p.bankName || p.userName);
+
+        if (!isOldFormat) return oldData; // Already in new format
+
+        // Map old investment types to new categories
+        const typeToCategory = {
+          "Savings Account": "Cash",
+          "Fixed Deposit": "Bonds",
+          "Public Provident Fund": "Bonds",
+          "Mutual Fund": "Mutual Funds",
+          "Stocks": "Stocks",
+          "ETF": "Stocks",
+          "ULIP": "Mutual Funds",
+          "Employee Provident Fund": "Bonds",
+          "Gratuity": "Cash",
+          "Physical Gold": "Real Estate",
+          "House/Apartment": "Real Estate",
+          "Car": "Real Estate",
+          "Two Wheeler": "Real Estate",
+          "Sukanya Samridhi": "Bonds"
+        };
+
+        const migratedPortfolios = oldData.portfolios.map(oldPort => {
+          const portfolioName = oldPort.bankName || "Portfolio";
+          const description = oldPort.userName ? `Account holder: ${oldPort.userName}` : "";
+
+          const migratedInvestments = oldPort.investments.map(oldInv => ({
+            id: oldInv.id,
+            name: oldInv.name,
+            category: typeToCategory[oldInv.type] || "Cash",
+            invested: oldInv.costBasis || oldInv.amount || 0,
+            current: oldInv.amount || 0,
+            units: 1,
+            date: oldInv.purchaseDate || new Date().toISOString().split('T')[0]
+          }));
+
+          return {
+            id: oldPort.id,
+            name: portfolioName,
+            description: description,
+            investments: migratedInvestments
+          };
+        });
+
+        return {
+          portfolios: migratedPortfolios,
+          goals: oldData.goals || [],
+          alerts: oldData.alerts || [],
+          categories: defaultCategories
+        };
+      };
+
       const importData = (e) => {
         const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
         reader.onload = (event) => {
           try {
-            const data = JSON.parse(event.target.result);
+            let data = JSON.parse(event.target.result);
+
+            // Try to migrate old format
+            data = migrateOldFormat(data);
 
             // Validate and fix portfolio data
             if (data.portfolios && Array.isArray(data.portfolios)) {
               const fixedPortfolios = data.portfolios.map(p => ({
-                ...p,
-                investments: Array.isArray(p.investments) ? p.investments : []
+                id: p.id || Date.now() + Math.random(),
+                name: p.name || "Portfolio",
+                description: p.description || "",
+                investments: Array.isArray(p.investments) ? p.investments.map(inv => ({
+                  id: inv.id || Date.now() + Math.random(),
+                  name: inv.name || "Investment",
+                  category: inv.category || "Cash",
+                  invested: parseFloat(inv.invested) || 0,
+                  current: parseFloat(inv.current) || 0,
+                  units: parseFloat(inv.units) || 1,
+                  date: inv.date || new Date().toISOString().split('T')[0]
+                })) : []
               }));
               setPortfolios(fixedPortfolios);
             }
@@ -276,7 +346,7 @@
             if (data.alerts && Array.isArray(data.alerts)) setAlerts(data.alerts);
             if (data.categories && Array.isArray(data.categories)) setCategories(data.categories);
 
-            alert("✅ Data imported successfully!");
+            alert("✅ Data imported successfully!\n\n📊 Your wealth data has been migrated to the new format.");
             // Reset view to dashboard after import
             setView("dashboard");
             setSearchTerm("");
