@@ -312,6 +312,15 @@
         }));
       };
 
+      const updateInvestment = (portfolioId, investmentId, updates) => {
+        setPortfolios(portfolios.map(p => {
+          if (p.id === portfolioId) {
+            return { ...p, investments: p.investments.map(i => i.id === investmentId ? { ...i, ...updates } : i) };
+          }
+          return p;
+        }));
+      };
+
       const startEditPortfolio = (portfolio) => {
         setEditingPortfolioId(portfolio.id);
         setEditPortfolioData({ name: portfolio.name, description: portfolio.description });
