@@ -178,15 +178,30 @@
             id: p.id || Date.now(),
             name: p.name || "Portfolio",
             description: p.description || "",
-            investments: Array.isArray(p.investments) ? p.investments.map(i => ({
-              id: i.id || Date.now(),
-              name: i.name || "Investment",
-              category: (i.category === "Bonds" || i.category === "Fixed Deposits and Government Funds" ? "Fixed Deposits" : i.category) || "Stocks",
-              invested: parseFloat(i.invested) || 0,
-              current: parseFloat(i.current) || 0,
-              units: parseFloat(i.units) || 1,
-              date: i.date || "2024-01-01"
-            })) : []
+            investments: Array.isArray(p.investments) ? p.investments.map(i => {
+              let category = i.category || "Stocks";
+              // Auto-convert old category names
+              if (category === "Bonds") {
+                category = "Fixed Deposits";
+              } else if (category === "Fixed Deposits and Government Funds") {
+                // Check if it's actually a Provident Fund
+                const nameUpper = (i.name || "").toUpperCase();
+                if (nameUpper.includes("PROVIDENT") || nameUpper.includes("PPF") || nameUpper.includes("SUKANYA") || nameUpper.includes("EPF") || nameUpper.includes("GRATUITY")) {
+                  category = "Provident Fund";
+                } else {
+                  category = "Fixed Deposits";
+                }
+              }
+              return {
+                id: i.id || Date.now(),
+                name: i.name || "Investment",
+                category: category,
+                invested: parseFloat(i.invested) || 0,
+                current: parseFloat(i.current) || 0,
+                units: parseFloat(i.units) || 1,
+                date: i.date || "2024-01-01"
+              };
+            }) : []
           }));
         } catch (e) {
           console.error("Error loading portfolios:", e);
