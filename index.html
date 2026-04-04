@@ -228,6 +228,7 @@
       const [showReports, setShowReports] = useState(false);
       const [searchTerm, setSearchTerm] = useState("");
       const [sortBy, setSortBy] = useState("name");
+      const [portfolioView, setPortfolioView] = useState("user");
       const [editingPortfolioId, setEditingPortfolioId] = useState(null);
       const [editingInvestmentId, setEditingInvestmentId] = useState(null);
       const [editPortfolioData, setEditPortfolioData] = useState({ name: "", description: "" });
@@ -546,32 +547,94 @@
                     </div>
                   </div>
 
-                  {/* User Breakdown */}
+                  {/* Portfolio Breakdown - By User or Asset Type */}
                   <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700">
-                    <h2 className="text-xl font-bold mb-4">👥 Portfolio by User</h2>
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-xl font-bold">📊 Portfolio Breakdown</h2>
+                      <select value={portfolioView} onChange={(e) => setPortfolioView(e.target.value)} className="px-3 py-1 rounded-lg bg-slate-700 text-white text-sm">
+                        <option value="user">View by User</option>
+                        <option value="asset">View by Asset Type</option>
+                      </select>
+                    </div>
+
                     <div className="space-y-3">
-                      {Object.entries(userBreakdown).map(([user, data]) => {
-                        const pct = summaryStats.current ? (data.current / summaryStats.current) * 100 : 0;
-                        return (
-                          <div key={user} className="p-3 bg-slate-700/30 rounded-lg">
-                            <div className="flex justify-between items-start mb-2">
-                              <div>
-                                <p className="text-sm font-medium">👤 {user}</p>
-                                <div className="text-xs text-gray-500 mt-1 ml-5">
-                                  {data.portfolios.map((p) => (
-                                    <div key={p.id} className="text-gray-400">• {p.name}</div>
-                                  ))}
+                      {portfolioView === "user" ? (
+                        // View by User
+                        Object.entries(userBreakdown).map(([user, data]) => {
+                          const pct = summaryStats.current ? (data.current / summaryStats.current) * 100 : 0;
+                          return (
+                            <div key={user} className="p-3 bg-slate-700/30 rounded-lg">
+                              <div className="flex justify-between items-start mb-2">
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium">👤 {user}</p>
+                                  <div className="text-xs text-gray-500 mt-2 ml-5">
+                                    {data.portfolios.map((p) => {
+                                      const pInvested = p.investments.reduce((s, i) => s + i.invested, 0);
+                                      const pCurrent = p.investments.reduce((s, i) => s + i.current, 0);
+                                      return (
+                                        <div key={p.id} className="mb-2">
+                                          <p className="text-gray-400 font-medium">• {p.name}</p>
+                                          <div className="ml-4 text-gray-500 text-xs">
+                                            {p.investments.map((inv) => (
+                                              <div key={inv.id}>{CATEGORY_ICONS[inv.category]} {inv.name}: {formatCurrency(inv.current)}</div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
                                 </div>
+                                <span className="text-sm font-medium text-gray-400">{formatCurrency(data.current)}</span>
                               </div>
-                              <span className="text-sm text-gray-400">{formatCurrency(data.current)} ({pct.toFixed(1)}%)</span>
+                              <div className="text-xs text-gray-500 mb-2">{data.portfolios.length} portfolio(s) • {data.portfolios.reduce((s, p) => s + p.investments.length, 0)} investments</div>
+                              <div className="w-full h-2 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }}>
+                                <div className="h-full rounded-full progress-bar" style={{ width: pct + "%", background: "#6366f1" }}></div>
+                              </div>
                             </div>
-                            <div className="text-xs text-gray-500 mb-2">{data.portfolios.length} portfolio(s) • {data.portfolios.reduce((s, p) => s + p.investments.length, 0)} investments</div>
-                            <div className="w-full h-2 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }}>
-                              <div className="h-full rounded-full progress-bar" style={{ width: pct + "%", background: "#6366f1" }}></div>
+                          );
+                        })
+                      ) : (
+                        // View by Asset Type
+                        defaultCategories.map((cat) => {
+                          const catData = categoryBreakdown[cat];
+                          const pct = summaryStats.current ? (catData.current / summaryStats.current) * 100 : 0;
+                          if (catData.current === 0) return null;
+
+                          const investmentsByUser = {};
+                          allInvestments.filter(inv => inv.category === cat).forEach(inv => {
+                            const user = portfolios.find(p => p.id === inv.portfolioId)?.description?.split("Account holder: ")[1] || "Unknown";
+                            if (!investmentsByUser[user]) investmentsByUser[user] = [];
+                            investmentsByUser[user].push(inv);
+                          });
+
+                          return (
+                            <div key={cat} className="p-3 bg-slate-700/30 rounded-lg">
+                              <div className="flex justify-between items-start mb-2">
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium">{CATEGORY_ICONS[cat]} {cat}</p>
+                                  <div className="text-xs text-gray-500 mt-2 ml-5">
+                                    {Object.entries(investmentsByUser).map(([user, invs]) => (
+                                      <div key={user} className="mb-1">
+                                        <p className="text-gray-400">👤 {user}</p>
+                                        <div className="ml-4 text-gray-500">
+                                          {invs.map((inv) => (
+                                            <div key={inv.id}>{inv.name}: {formatCurrency(inv.current)}</div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                                <span className="text-sm font-medium text-gray-400">{formatCurrency(catData.current)}</span>
+                              </div>
+                              <div className="text-xs text-gray-500 mb-2">{catData.count} investment(s)</div>
+                              <div className="w-full h-2 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }}>
+                                <div className="h-full rounded-full progress-bar" style={{ width: pct + "%", background: COLORS[defaultCategories.indexOf(cat)] }}></div>
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })
+                      )}
                     </div>
                   </div>
                 </div>
@@ -609,69 +672,6 @@
                   </div>
                 </div>
 
-                {/* Bank/Institution Summary */}
-                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold">🏦 Portfolio Summary</h2>
-                    <div className="flex gap-2">
-                      <label className="text-sm text-gray-400">Sort by:</label>
-                      <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="px-3 py-1 rounded-lg bg-slate-700 text-white text-sm">
-                        <option value="name">Portfolio Name</option>
-                        <option value="user">User</option>
-                        <option value="amount-high">Amount (High to Low)</option>
-                        <option value="amount-low">Amount (Low to High)</option>
-                        <option value="bank">Bank/Asset Type</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    {(() => {
-                      let sorted = [...portfolios];
-                      const getAmount = (p) => p.investments.reduce((s, i) => s + i.current, 0);
-                      const getUser = (p) => p.description?.split("Account holder: ")[1] || p.name;
-
-                      switch(sortBy) {
-                        case "name":
-                          sorted.sort((a, b) => a.name.localeCompare(b.name));
-                          break;
-                        case "user":
-                          sorted.sort((a, b) => getUser(a).localeCompare(getUser(b)));
-                          break;
-                        case "amount-high":
-                          sorted.sort((a, b) => getAmount(b) - getAmount(a));
-                          break;
-                        case "amount-low":
-                          sorted.sort((a, b) => getAmount(a) - getAmount(b));
-                          break;
-                        case "bank":
-                          sorted.sort((a, b) => a.name.localeCompare(b.name));
-                          break;
-                        default:
-                          break;
-                      }
-                      return sorted;
-                    })().map((p) => {
-                      const invested = p.investments.reduce((s, i) => s + i.invested, 0);
-                      const current = p.investments.reduce((s, i) => s + i.current, 0);
-                      const gain = current - invested;
-                      const pct = summaryStats.current ? (current / summaryStats.current) * 100 : 0;
-                      return (
-                        <div key={p.id} className="p-3 bg-slate-700/30 rounded-lg">
-                          <div className="flex justify-between items-start mb-1">
-                            <div>
-                              <p className="font-medium text-sm">{p.name}</p>
-                              <p className="text-xs text-gray-400">👤 {p.description?.split("Account holder: ")[1] || "Unknown"} • {p.investments.length} investments • {formatCurrency(current)}</p>
-                            </div>
-                            <span className="text-sm font-medium" style={{color: gain >= 0 ? "#10b981" : "#ef4444"}}>{formatCurrency(gain)}</span>
-                          </div>
-                          <div className="w-full h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }}>
-                            <div className="h-full rounded-full progress-bar" style={{ width: pct + "%", background: "#6366f1" }}></div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
               </>
             )}
 
