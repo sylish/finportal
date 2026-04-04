@@ -38,8 +38,8 @@
     const { useState, useMemo, useCallback } = React;
 
     const COLORS = ["#6366f1", "#22d3ee", "#f59e0b", "#ef4444", "#10b981", "#ec4899", "#8b5cf6", "#14b8a6", "#fbbf24", "#a78bfa"];
-    const CATEGORY_ICONS = { Stocks: "📈", "Mutual Funds": "📊", Bonds: "🏦", "Real Estate": "🏠", Crypto: "₿", Cash: "💵", Gold: "🪙", "Provident Fund": "🏛️" };
-    const defaultCategories = ["Stocks", "Mutual Funds", "Bonds", "Real Estate", "Crypto", "Cash", "Gold", "Provident Fund"];
+    const CATEGORY_ICONS = { Stocks: "📈", "Mutual Funds": "📊", "Fixed Deposits and Government Funds": "🏦", "Real Estate": "🏠", Crypto: "₿", Cash: "💵", Gold: "🪙", "Provident Fund": "🏛️" };
+    const defaultCategories = ["Stocks", "Mutual Funds", "Fixed Deposits and Government Funds", "Real Estate", "Crypto", "Cash", "Gold", "Provident Fund"];
 
     const initialPortfolios = [
       {
@@ -393,7 +393,7 @@
         if (!isOldFormat) return oldData;
 
         const typeToCategory = {
-          "Savings Account": "Cash", "Fixed Deposit": "Bonds", "Public Provident Fund": "Provident Fund",
+          "Savings Account": "Cash", "Fixed Deposit": "Fixed Deposits and Government Funds", "Public Provident Fund": "Provident Fund",
           "Mutual Fund": "Mutual Funds", "Stocks": "Stocks", "ETF": "Stocks", "ULIP": "Mutual Funds",
           "Employee Provident Fund": "Provident Fund", "Gratuity": "Cash", "Physical Gold": "Gold",
           "House/Apartment": "Real Estate", "Car": "Real Estate", "Two Wheeler": "Real Estate", "Sukanya Samridhi": "Provident Fund"
@@ -765,7 +765,7 @@
                                       {isEditingInv ? (
                                         <>
                                           <td className="py-3 px-3"><input type="text" value={editInvestmentData.name} onChange={(e) => setEditInvestmentData({...editInvestmentData, name: e.target.value})} className="w-full px-2 py-1 rounded bg-slate-600 text-white text-sm" /></td>
-                                          <td className="py-3 px-3"><select value={editInvestmentData.category} onChange={(e) => setEditInvestmentData({...editInvestmentData, category: e.target.value})} className="w-full px-2 py-1 rounded bg-slate-600 text-white text-sm"><option value="Stocks">Stocks</option><option value="Bonds">Bonds</option><option value="Mutual Funds">Mutual Funds</option><option value="Real Estate">Real Estate</option><option value="Cash">Cash</option><option value="Crypto">Crypto</option><option value="Gold">Gold</option><option value="Provident Fund">Provident Fund</option></select></td>
+                                          <td className="py-3 px-3"><select value={editInvestmentData.category} onChange={(e) => setEditInvestmentData({...editInvestmentData, category: e.target.value})} className="w-full px-2 py-1 rounded bg-slate-600 text-white text-sm"><option value="Stocks">Stocks</option><option value="Fixed Deposits and Government Funds">Fixed Deposits and Government Funds</option><option value="Mutual Funds">Mutual Funds</option><option value="Real Estate">Real Estate</option><option value="Cash">Cash</option><option value="Crypto">Crypto</option><option value="Gold">Gold</option><option value="Provident Fund">Provident Fund</option></select></td>
                                           <td className="py-3 px-3"><input type="number" value={editInvestmentData.invested} onChange={(e) => setEditInvestmentData({...editInvestmentData, invested: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 rounded bg-slate-600 text-white text-sm text-right" /></td>
                                           <td className="py-3 px-3"><input type="number" value={editInvestmentData.current} onChange={(e) => setEditInvestmentData({...editInvestmentData, current: parseFloat(e.target.value) || 0})} className="w-full px-2 py-1 rounded bg-slate-600 text-white text-sm text-right" /></td>
                                           <td className="py-3 px-3 text-center">
