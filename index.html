@@ -101,7 +101,7 @@
     const calculateRiskScore = (portfolio) => {
       const investments = portfolio.investments;
       if (!investments.length) return 0;
-      const categoryRisks = { Stocks: 8, Crypto: 9, "Mutual Funds": 5, Bonds: 2, "Real Estate": 6, Cash: 1 };
+      const categoryRisks = { Stocks: 8, Crypto: 9, "Mutual Funds": 5, "Fixed Deposits and Government Funds": 2, "Real Estate": 6, Cash: 1, Gold: 3, "Provident Fund": 2 };
       const diversification = investments.length > 5 ? 10 : investments.length * 2;
       const totalCurrent = investments.reduce((s, i) => s + i.current, 0);
       const weightedRisk = investments.reduce((s, i) => s + (categoryRisks[i.category] || 5) * (i.current / totalCurrent), 0);
@@ -181,7 +181,7 @@
             investments: Array.isArray(p.investments) ? p.investments.map(i => ({
               id: i.id || Date.now(),
               name: i.name || "Investment",
-              category: i.category || "Stocks",
+              category: (i.category === "Bonds" ? "Fixed Deposits and Government Funds" : i.category) || "Stocks",
               invested: parseFloat(i.invested) || 0,
               current: parseFloat(i.current) || 0,
               units: parseFloat(i.units) || 1,
