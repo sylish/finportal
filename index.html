@@ -285,10 +285,11 @@
       const userBreakdown = useMemo(() => {
         const breakdown = {};
         portfolios.forEach(p => {
-          const userName = (p.description?.split("Account holder: ")[1] || "Other").split('\n')[0].trim();
-          if (!breakdown[userName]) breakdown[userName] = { portfolios: [], invested: 0, current: 0 };
-          breakdown[userName].portfolios.push(p);
-          p.investments.forEach(i => { breakdown[userName].invested += i.invested; breakdown[userName].current += i.current; });
+          const rawName = (p.description?.split("Account holder: ")[1] || "Other").split('\n')[0].trim();
+          const userKey = rawName.toLowerCase();
+          if (!breakdown[userKey]) breakdown[userKey] = { displayName: rawName, portfolios: [], invested: 0, current: 0 };
+          breakdown[userKey].portfolios.push(p);
+          p.investments.forEach(i => { breakdown[userKey].invested += i.invested; breakdown[userKey].current += i.current; });
         });
         return breakdown;
       }, [portfolios]);
@@ -579,7 +580,7 @@
 
                       const investmentsByUser = {};
                       allInvestments.filter(inv => inv.category === cat).forEach(inv => {
-                        const user = (portfolios.find(p => p.id === inv.portfolioId)?.description?.split("Account holder: ")[1] || "Unknown").split('\n')[0].trim();
+                        const user = (portfolios.find(p => p.id === inv.portfolioId)?.description?.split("Account holder: ")[1] || "Unknown").split('\n')[0].trim().toLowerCase();
                         if (!investmentsByUser[user]) investmentsByUser[user] = { value: 0, count: 0 };
                         investmentsByUser[user].value += inv.current;
                         investmentsByUser[user].count += 1;
@@ -624,7 +625,7 @@
                       // Get asset type breakdown for this user
                       const assetTypeBreakdown = {};
                       allInvestments.filter(inv => {
-                        const invUser = (portfolios.find(p => p.id === inv.portfolioId)?.description?.split("Account holder: ")[1] || "Unknown").split('\n')[0].trim();
+                        const invUser = (portfolios.find(p => p.id === inv.portfolioId)?.description?.split("Account holder: ")[1] || "Unknown").split('\n')[0].trim().toLowerCase();
                         return invUser === user;
                       }).forEach(inv => {
                         if (!assetTypeBreakdown[inv.category]) {
@@ -638,7 +639,7 @@
                         <div key={user} className="p-3 bg-slate-700/40 rounded-lg border border-slate-600/50">
                           <div className="flex justify-between items-start mb-2">
                             <div>
-                              <p className="text-sm font-bold">👤 {user}</p>
+                              <p className="text-sm font-bold">👤 {data.displayName}</p>
                               <p className="text-xs text-gray-400">{data.portfolios.length} portfolio(s)</p>
                             </div>
                             <div className="text-right">
