@@ -285,7 +285,7 @@
       const userBreakdown = useMemo(() => {
         const breakdown = {};
         portfolios.forEach(p => {
-          const userName = p.description?.split("Account holder: ")[1] || "Other";
+          const userName = (p.description?.split("Account holder: ")[1] || "Other").split('\n')[0].trim();
           if (!breakdown[userName]) breakdown[userName] = { portfolios: [], invested: 0, current: 0 };
           breakdown[userName].portfolios.push(p);
           p.investments.forEach(i => { breakdown[userName].invested += i.invested; breakdown[userName].current += i.current; });
@@ -579,7 +579,7 @@
 
                       const investmentsByUser = {};
                       allInvestments.filter(inv => inv.category === cat).forEach(inv => {
-                        const user = portfolios.find(p => p.id === inv.portfolioId)?.description?.split("Account holder: ")[1] || "Unknown";
+                        const user = (portfolios.find(p => p.id === inv.portfolioId)?.description?.split("Account holder: ")[1] || "Unknown").split('\n')[0].trim();
                         if (!investmentsByUser[user]) investmentsByUser[user] = { value: 0, count: 0 };
                         investmentsByUser[user].value += inv.current;
                         investmentsByUser[user].count += 1;
@@ -624,7 +624,7 @@
                       // Get asset type breakdown for this user
                       const assetTypeBreakdown = {};
                       allInvestments.filter(inv => {
-                        const invUser = portfolios.find(p => p.id === inv.portfolioId)?.description?.split("Account holder: ")[1] || "Unknown";
+                        const invUser = (portfolios.find(p => p.id === inv.portfolioId)?.description?.split("Account holder: ")[1] || "Unknown").split('\n')[0].trim();
                         return invUser === user;
                       }).forEach(inv => {
                         if (!assetTypeBreakdown[inv.category]) {
