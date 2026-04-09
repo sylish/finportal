@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trip Memories Portal</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #0f1119 0%, #1a1428 100%); color: #fff; min-height: 100vh; }
+    .card-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .card-hover:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
+    .cover-img { width: 100%; height: 180px; object-fit: cover; background: linear-gradient(135deg, #1e1b4b, #312e81); }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; margin: 2px; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .modal-box { background: #1e1b2e; border-radius: 16px; max-width: 700px; width: 100%; max-height: 90vh; overflow-y: auto; border: 1px solid #3d3760; }
+    .pill-btn { padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; border: 1px solid transparent; }
+    .pill-btn.active { background: #7c3aed; border-color: #7c3aed; color: white; }
+    .pill-btn.inactive { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.12); color: #aaa; }
+    .pill-btn.inactive:hover { background: rgba(255,255,255,0.12); color: white; }
+    .search-box { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 8px 14px; color: white; width: 100%; outline: none; font-size: 14px; }
+    .search-box::placeholder { color: #888; }
+    .search-box:focus { border-color: #7c3aed; }
+    .stat-chip { background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.3); border-radius: 8px; padding: 8px 14px; text-align: center; }
+    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: #3d3760; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useMemo, useCallback } = React;
+
+    // ─────────────────────────────────────────────
+    // TRIP DATA — edit this section to add your trips
+    // Each trip: id, title, destination, country, year, dates, people, coverEmoji, coverColor, albumUrl, notes, highlights
+    // ─────────────────────────────────────────────
+    const SAMPLE_TRIPS = [
+      {
+        id: 1,
+        title: "Goa Beach Holiday",
+        destination: "Goa",
+        country: "India",
+        region: "South Asia",
+        year: 2024,
+        dates: { from: "2024-12-20", to: "2024-12-26" },
+        people: ["Sylish", "Adhvika", "Radha"],
+        coverEmoji: "🏖️",
+        coverColor: "from-orange-600 to-amber-500",
+        albumUrl: "",
+        notes: "New Year getaway. Beach, shacks, sunsets.",
+        highlights: ["Calangute Beach", "Dudhsagar Falls", "Old Goa Churches"],
+        photoCount: 0,
+        videoCount: 0,
+      },
+      {
+        id: 2,
+        title: "Ooty & Kodaikanal",
+        destination: "Ooty",
+        country: "India",
+        region: "South Asia",
+        year: 2024,
+        dates: { from: "2024-05-10", to: "2024-05-15" },
+        people: ["Sylish", "Adhvika"],
+        coverEmoji: "⛰️",
+        coverColor: "from-green-700 to-teal-600",
+        albumUrl: "",
+        notes: "Hill station escape — tea gardens and cool breeze.",
+        highlights: ["Ooty Lake", "Botanical Garden", "Kodai Lake"],
+        photoCount: 0,
+        videoCount: 0,
+      },
+      {
+        id: 3,
+        title: "Dubai Trip",
+        destination: "Dubai",
+        country: "UAE",
+        region: "Middle East",
+        year: 2023,
+        dates: { from: "2023-11-03", to: "2023-11-09" },
+        people: ["Sylish", "Adhvika", "Radha"],
+        coverEmoji: "🌆",
+        coverColor: "from-yellow-600 to-orange-500",
+        albumUrl: "",
+        notes: "First international trip. Burj Khalifa, desert safari.",
+        highlights: ["Burj Khalifa", "Desert Safari", "Dubai Mall", "Palm Jumeirah"],
+        photoCount: 0,
+        videoCount: 0,
+      },
+      {
+        id: 4,
+        title: "Coorg Monsoon",
+        destination: "Coorg",
+        country: "India",
+        region: "South Asia",
+        year: 2023,
+        dates: { from: "2023-07-14", to: "2023-07-17" },
+        people: ["Sylish", "Adhvika"],
+        coverEmoji: "🌿",
+        coverColor: "from-emerald-700 to-green-600",
+        albumUrl: "",
+        notes: "Coffee estates and waterfalls in full monsoon bloom.",
+        highlights: ["Abbey Falls", "Raja's Seat", "Coffee Plantation"],
+        photoCount: 0,
+        videoCount: 0,
+      },
+      {
+        id: 5,
+        title: "Singapore & Malaysia",
+        destination: "Singapore",
+        country: "Singapore",
+        region: "Southeast Asia",
+        year: 2022,
+        dates: { from: "2022-12-22", to: "2022-12-30" },
+        people: ["Sylish", "Adhvika", "Radha"],
+        coverEmoji: "🦁",
+        coverColor: "from-red-600 to-pink-600",
+        albumUrl: "",
+        notes: "Gardens by the Bay, Universal Studios, Penang street food.",
+        highlights: ["Gardens by the Bay", "Universal Studios", "Marina Bay Sands", "Penang"],
+        photoCount: 0,
+        videoCount: 0,
+      },
+    ];
+
+    const FLAG = { "India": "🇮🇳", "UAE": "🇦🇪", "Singapore": "🇸🇬", "Malaysia": "🇲🇾", "USA": "🇺🇸", "UK": "🇬🇧", "France": "🇫🇷", "Thailand": "🇹🇭", "Japan": "🇯🇵", "Australia": "🇦🇺" };
+
+    function formatDate(d) {
+      if (!d) return "";
+      const [y, m, day] = d.split("-");
+      return new Date(y, m-1, day).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+    }
+    function tripDuration(from, to) {
+      const d = Math.round((new Date(to) - new Date(from)) / 86400000);
+      return d + (d === 1 ? " night" : " nights");
+    }
+
+    // ─── Colours for person tags ───
+    const PERSON_COLORS = ["bg-violet-600","bg-pink-600","bg-cyan-600","bg-amber-600","bg-green-600","bg-rose-600","bg-indigo-600","bg-teal-600"];
+    function personColor(name, all) { return PERSON_COLORS[all.indexOf(name) % PERSON_COLORS.length]; }
+
+    // ─── Add / Edit Trip Modal ───
+    function TripForm({ trip, allPeople, onSave, onClose }) {
+      const blank = { title:"", destination:"", country:"", region:"", year: new Date().getFullYear(), dates:{ from:"", to:"" }, people:[], coverEmoji:"✈️", coverColor:"from-violet-700 to-indigo-600", albumUrl:"", notes:"", highlights:[], photoCount:0, videoCount:0 };
+      const [form, setForm] = useState(trip || blank);
+      const [newPerson, setNewPerson] = useState("");
+      const [newHighlight, setNewHighlight] = useState("");
+      const EMOJIS = ["✈️","🏖️","⛰️","🌆","🌿","🦁","🏔️","🗺️","🌊","🏕️","🎡","🕌","🌸","🍜","🎭"];
+      const COLORS = [
+        { label:"Purple",value:"from-violet-700 to-indigo-600"},
+        { label:"Ocean",value:"from-cyan-700 to-blue-600"},
+        { label:"Sunset",value:"from-orange-600 to-amber-500"},
+        { label:"Forest",value:"from-green-700 to-teal-600"},
+        { label:"Rose",value:"from-rose-600 to-pink-600"},
+        { label:"Desert",value:"from-yellow-600 to-orange-500"},
+        { label:"Night",value:"from-slate-700 to-slate-900"},
+      ];
+      const set = (k,v) => setForm(f => ({...f,[k]:v}));
+      return (
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+          <div className="modal-box p-6">
+            <div className="flex justify-between items-center mb-5">
+              <h2 className="text-xl font-bold">{trip ? "✏️ Edit Trip" : "➕ Add New Trip"}</h2>
+              <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl leading-none">×</button>
+            </div>
+            <div className="space-y-4">
+              {/* Cover preview */}
+              <div className={`h-20 rounded-xl bg-gradient-to-r ${form.coverColor} flex items-center justify-center text-4xl`}>{form.coverEmoji}</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-400 mb-1 block">Trip Title *</label>
+                  <input className="search-box" value={form.title} onChange={e=>set("title",e.target.value)} placeholder="e.g. Goa Beach Holiday" />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 mb-1 block">Destination</label>
+                  <input className="search-box" value={form.destination} onChange={e=>set("destination",e.target.value)} placeholder="e.g. Goa" />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 mb-1 block">Country</label>
+                  <input className="search-box" value={form.country} onChange={e=>set("country",e.target.value)} placeholder="e.g. India" />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 mb-1 block">Region</label>
+                  <input className="search-box" value={form.region} onChange={e=>set("region",e.target.value)} placeholder="e.g. South Asia" />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 mb-1 block">From Date</label>
+                  <input type="date" className="search-box" value={form.dates.from} onChange={e=>set("dates",{...form.dates,from:e.target.value})} />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 mb-1 block">To Date</label>
+                  <input type="date" className="search-box" value={form.dates.to} onChange={e=>set("dates",{...form.dates,to:e.target.value})} />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 mb-1 block">Photos count</label>
+                  <input type="number" className="search-box" value={form.photoCount} onChange={e=>set("photoCount",parseInt(e.target.value)||0)} />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 mb-1 block">Videos count</label>
+                  <input type="number" className="search-box" value={form.videoCount} onChange={e=>set("videoCount",parseInt(e.target.value)||0)} />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Album / Drive Link</label>
+                <input className="search-box" value={form.albumUrl} onChange={e=>set("albumUrl",e.target.value)} placeholder="Paste Google Drive or OneDrive shared folder URL" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Notes</label>
+                <textarea className="search-box" rows={2} value={form.notes} onChange={e=>set("notes",e.target.value)} placeholder="A short description of this trip..." />
+              </div>
+              {/* Emoji picker */}
+              <div>
+                <label className="text-xs text-gray-400 mb-2 block">Cover Emoji</label>
+                <div className="flex flex-wrap gap-2">
+                  {EMOJIS.map(e=>(
+                    <button key={e} onClick={()=>set("coverEmoji",e)} className={`text-xl w-9 h-9 rounded-lg flex items-center justify-center transition-all ${form.coverEmoji===e?"bg-violet-600 scale-110":"bg-white/10 hover:bg-white/20"}`}>{e}</button>
+                  ))}
+                </div>
+              </div>
+              {/* Color picker */}
+              <div>
+                <label className="text-xs text-gray-400 mb-2 block">Card Colour</label>
+                <div className="flex flex-wrap gap-2">
+                  {COLORS.map(c=>(
+                    <button key={c.value} onClick={()=>set("coverColor",c.value)} className={`px-3 py-1 rounded-full text-xs bg-gradient-to-r ${c.value} ${form.coverColor===c.value?"ring-2 ring-white":"opacity-70 hover:opacity-100"}`}>{c.label}</button>
+                  ))}
+                </div>
+              </div>
+              {/* People */}
+              <div>
+                <label className="text-xs text-gray-400 mb-2 block">People on this trip</label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {form.people.map(p=>(
+                    <span key={p} className="tag bg-violet-700/60 text-violet-200 cursor-pointer" onClick={()=>set("people",form.people.filter(x=>x!==p))}>{p} ×</span>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input className="search-box flex-1" value={newPerson} onChange={e=>setNewPerson(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&newPerson.trim()){set("people",[...new Set([...form.people,newPerson.trim()])]);setNewPerson("");}}} placeholder="Type name + Enter" />
+                  {allPeople.filter(p=>!form.people.includes(p)).map(p=>(
+                    <button key={p} onClick={()=>set("people",[...new Set([...form.people,p])])} className="pill-btn inactive text-xs">{p}</button>
+                  ))}
+                </div>
+              </div>
+              {/* Highlights */}
+              <div>
+                <label className="text-xs text-gray-400 mb-2 block">Highlights / Places visited</label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {form.highlights.map(h=>(
+                    <span key={h} className="tag bg-slate-600 text-slate-200 cursor-pointer" onClick={()=>set("highlights",form.highlights.filter(x=>x!==h))}>{h} ×</span>
+                  ))}
+                </div>
+                <input className="search-box" value={newHighlight} onChange={e=>setNewHighlight(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&newHighlight.trim()){set("highlights",[...form.highlights,newHighlight.trim()]);setNewHighlight("");}}} placeholder="Type highlight + Enter (e.g. Burj Khalifa)" />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={()=>onSave(form)} className="flex-1 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 font-semibold text-sm transition-colors">💾 Save Trip</button>
+              <button onClick={onClose} className="px-5 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-sm transition-colors">Cancel</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ─── Trip Detail Modal ───
+    function TripDetail({ trip, allPeople, onClose, onEdit, onDelete }) {
+      return (
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+          <div className="modal-box overflow-hidden">
+            <div className={`h-36 bg-gradient-to-r ${trip.coverColor} flex items-center justify-center text-6xl relative`}>
+              {trip.coverEmoji}
+              <button onClick={onClose} className="absolute top-3 right-3 bg-black/40 hover:bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg leading-none">×</button>
+            </div>
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-1">
+                <h2 className="text-2xl font-bold">{trip.title}</h2>
+                <span className="text-2xl">{FLAG[trip.country] || "🌍"}</span>
+              </div>
+              <p className="text-gray-400 text-sm mb-4">{trip.destination}, {trip.country} · {trip.region}</p>
+
+              <div className="grid grid-cols-3 gap-3 mb-5">
+                <div className="stat-chip">
+                  <p className="text-xs text-gray-400">Dates</p>
+                  <p className="text-sm font-semibold">{formatDate(trip.dates.from)}</p>
+                  <p className="text-xs text-gray-400">to {formatDate(trip.dates.to)}</p>
+                </div>
+                <div className="stat-chip">
+                  <p className="text-xs text-gray-400">Duration</p>
+                  <p className="text-lg font-bold text-violet-400">{tripDuration(trip.dates.from, trip.dates.to)}</p>
+                </div>
+                <div className="stat-chip">
+                  <p className="text-xs text-gray-400">Memories</p>
+                  <p className="text-sm font-semibold">📷 {trip.photoCount} · 🎥 {trip.videoCount}</p>
+                </div>
+              </div>
+
+              {trip.notes && <p className="text-gray-300 text-sm mb-4 leading-relaxed">{trip.notes}</p>}
+
+              {trip.people.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-xs text-gray-400 mb-2 uppercase tracking-wide">Travellers</p>
+                  <div className="flex flex-wrap gap-2">
+                    {trip.people.map(p=>(
+                      <span key={p} className={`tag ${personColor(p, allPeople)} text-white`}>👤 {p}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {trip.highlights.length > 0 && (
+                <div className="mb-5">
+                  <p className="text-xs text-gray-400 mb-2 uppercase tracking-wide">Highlights</p>
+                  <div className="flex flex-wrap gap-2">
+                    {trip.highlights.map(h=>(
+                      <span key={h} className="tag bg-slate-700 text-slate-200">📍 {h}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                {trip.albumUrl
+                  ? <a href={trip.albumUrl} target="_blank" rel="noreferrer" className="flex-1 py-2.5 text-center rounded-xl bg-violet-600 hover:bg-violet-500 font-semibold text-sm transition-colors">📂 Open Album</a>
+                  : <button disabled className="flex-1 py-2.5 text-center rounded-xl bg-slate-700 text-slate-500 font-semibold text-sm cursor-not-allowed">📂 No Album Linked</button>
+                }
+                <button onClick={onEdit} className="px-4 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-sm transition-colors">✏️ Edit</button>
+                <button onClick={onDelete} className="px-4 py-2.5 rounded-xl bg-red-900/60 hover:bg-red-800/60 text-sm transition-colors text-red-300">🗑️</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ─── Main App ───
+    function App() {
+      const STORAGE_KEY = "tripportal_trips";
+      const [trips, setTrips] = useState(() => {
+        try {
+          const s = localStorage.getItem(STORAGE_KEY);
+          return s ? JSON.parse(s) : SAMPLE_TRIPS;
+        } catch { return SAMPLE_TRIPS; }
+      });
+      const saveTrips = t => { setTrips(t); localStorage.setItem(STORAGE_KEY, JSON.stringify(t)); };
+
+      const [search, setSearch] = useState("");
+      const [filterYear, setFilterYear] = useState("All");
+      const [filterPerson, setFilterPerson] = useState("All");
+      const [filterRegion, setFilterRegion] = useState("All");
+      const [sortBy, setSortBy] = useState("date-desc");
+      const [selectedTrip, setSelectedTrip] = useState(null);
+      const [editingTrip, setEditingTrip] = useState(null);
+      const [showAddForm, setShowAddForm] = useState(false);
+
+      const allPeople = useMemo(() => [...new Set(trips.flatMap(t => t.people))].sort(), [trips]);
+      const allYears = useMemo(() => [...new Set(trips.map(t => t.year))].sort((a,b)=>b-a), [trips]);
+      const allRegions = useMemo(() => [...new Set(trips.map(t => t.region).filter(Boolean))].sort(), [trips]);
+
+      const filtered = useMemo(() => {
+        let list = [...trips];
+        if (search) {
+          const q = search.toLowerCase();
+          list = list.filter(t =>
+            t.title.toLowerCase().includes(q) ||
+            t.destination.toLowerCase().includes(q) ||
+            t.country.toLowerCase().includes(q) ||
+            t.people.some(p => p.toLowerCase().includes(q)) ||
+            t.highlights.some(h => h.toLowerCase().includes(q))
+          );
+        }
+        if (filterYear !== "All") list = list.filter(t => t.year === parseInt(filterYear));
+        if (filterPerson !== "All") list = list.filter(t => t.people.includes(filterPerson));
+        if (filterRegion !== "All") list = list.filter(t => t.region === filterRegion);
+        list.sort((a,b) => {
+          if (sortBy === "date-desc") return new Date(b.dates.from) - new Date(a.dates.from);
+          if (sortBy === "date-asc") return new Date(a.dates.from) - new Date(b.dates.from);
+          if (sortBy === "name") return a.title.localeCompare(b.title);
+          if (sortBy === "country") return a.country.localeCompare(b.country);
+          return 0;
+        });
+        return list;
+      }, [trips, search, filterYear, filterPerson, filterRegion, sortBy]);
+
+      const totalPhotos = trips.reduce((s,t)=>s+t.photoCount,0);
+      const totalVideos = trips.reduce((s,t)=>s+t.videoCount,0);
+      const countries = new Set(trips.map(t=>t.country)).size;
+
+      const handleSave = (form) => {
+        if (!form.title) return;
+        if (editingTrip) {
+          saveTrips(trips.map(t => t.id === editingTrip.id ? { ...form, id: t.id } : t));
+          setEditingTrip(null);
+          setSelectedTrip({ ...form, id: editingTrip.id });
+        } else {
+          const newTrip = { ...form, id: Date.now() };
+          saveTrips([...trips, newTrip]);
+          setShowAddForm(false);
+        }
+      };
+
+      return (
+        <div className="min-h-screen">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-violet-900/60 to-indigo-900/60 border-b border-white/10 px-6 py-5">
+            <div className="max-w-6xl mx-auto">
+              <div className="flex items-center justify-between mb-1">
+                <div>
+                  <h1 className="text-2xl font-bold">✈️ Trip Memories</h1>
+                  <p className="text-gray-400 text-sm">Your travel story, beautifully organised</p>
+                </div>
+                <button onClick={()=>setShowAddForm(true)} className="px-4 py-2 bg-violet-600 hover:bg-violet-500 rounded-xl text-sm font-semibold transition-colors">+ Add Trip</button>
+              </div>
+              {/* Stats */}
+              <div className="flex gap-4 mt-4 flex-wrap">
+                <div className="stat-chip flex-1 min-w-[100px]">
+                  <p className="text-xs text-gray-400">Trips</p>
+                  <p className="text-xl font-bold text-violet-300">{trips.length}</p>
+                </div>
+                <div className="stat-chip flex-1 min-w-[100px]">
+                  <p className="text-xs text-gray-400">Countries</p>
+                  <p className="text-xl font-bold text-violet-300">{countries}</p>
+                </div>
+                <div className="stat-chip flex-1 min-w-[100px]">
+                  <p className="text-xs text-gray-400">Photos</p>
+                  <p className="text-xl font-bold text-violet-300">{totalPhotos || "—"}</p>
+                </div>
+                <div className="stat-chip flex-1 min-w-[100px]">
+                  <p className="text-xs text-gray-400">Videos</p>
+                  <p className="text-xl font-bold text-violet-300">{totalVideos || "—"}</p>
+                </div>
+                <div className="stat-chip flex-1 min-w-[100px]">
+                  <p className="text-xs text-gray-400">Travellers</p>
+                  <p className="text-xl font-bold text-violet-300">{allPeople.length}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="max-w-6xl mx-auto px-6 py-6">
+            {/* Search & Sort */}
+            <div className="flex gap-3 mb-5 flex-wrap">
+              <input className="search-box flex-1 min-w-[180px]" value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍  Search trips, places, people..." />
+              <select value={sortBy} onChange={e=>setSortBy(e.target.value)} className="search-box w-auto px-3 cursor-pointer">
+                <option value="date-desc">Newest first</option>
+                <option value="date-asc">Oldest first</option>
+                <option value="name">A → Z</option>
+                <option value="country">By country</option>
+              </select>
+            </div>
+
+            {/* Filters */}
+            <div className="space-y-3 mb-6">
+              {/* Year filter */}
+              <div className="flex gap-2 flex-wrap items-center">
+                <span className="text-xs text-gray-500 w-14">Year</span>
+                {["All", ...allYears].map(y=>(
+                  <button key={y} className={`pill-btn ${filterYear===String(y)?"active":"inactive"}`} onClick={()=>setFilterYear(String(y))}>{y}</button>
+                ))}
+              </div>
+              {/* Person filter */}
+              <div className="flex gap-2 flex-wrap items-center">
+                <span className="text-xs text-gray-500 w-14">Person</span>
+                {["All", ...allPeople].map(p=>(
+                  <button key={p} className={`pill-btn ${filterPerson===p?"active":"inactive"}`} onClick={()=>setFilterPerson(p)}>{filterPerson===p&&p!=="All"?"👤 ":""}{p}</button>
+                ))}
+              </div>
+              {/* Region filter */}
+              <div className="flex gap-2 flex-wrap items-center">
+                <span className="text-xs text-gray-500 w-14">Region</span>
+                {["All", ...allRegions].map(r=>(
+                  <button key={r} className={`pill-btn ${filterRegion===r?"active":"inactive"}`} onClick={()=>setFilterRegion(r)}>{r}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Results count */}
+            <p className="text-xs text-gray-500 mb-4">{filtered.length} trip{filtered.length!==1?"s":""} {filtered.length!==trips.length?`(filtered from ${trips.length})`:""}</p>
+
+            {/* Trip Grid */}
+            {filtered.length === 0 ? (
+              <div className="text-center py-20 text-gray-500">
+                <div className="text-5xl mb-3">🗺️</div>
+                <p className="text-lg">No trips match your filters</p>
+                <button className="mt-3 text-violet-400 text-sm hover:underline" onClick={()=>{setSearch("");setFilterYear("All");setFilterPerson("All");setFilterRegion("All");}}>Clear all filters</button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {filtered.map(trip => (
+                  <div key={trip.id} className="card-hover bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl overflow-hidden border border-slate-700 cursor-pointer" onClick={()=>setSelectedTrip(trip)}>
+                    {/* Cover */}
+                    <div className={`h-32 bg-gradient-to-r ${trip.coverColor} flex items-center justify-center relative`}>
+                      <span className="text-5xl">{trip.coverEmoji}</span>
+                      <span className="absolute top-2 right-2 text-xl">{FLAG[trip.country]||"🌍"}</span>
+                      {trip.albumUrl && <span className="absolute bottom-2 right-2 text-xs bg-black/50 px-2 py-0.5 rounded-full text-white">📂 Album</span>}
+                    </div>
+                    {/* Body */}
+                    <div className="p-4">
+                      <div className="flex justify-between items-start mb-1">
+                        <h3 className="font-bold text-sm leading-tight">{trip.title}</h3>
+                        <span className="text-xs text-gray-400 ml-2 shrink-0">{trip.year}</span>
+                      </div>
+                      <p className="text-xs text-gray-400 mb-2">📍 {trip.destination}, {trip.country}</p>
+                      {trip.dates.from && (
+                        <p className="text-xs text-gray-500 mb-3">
+                          {formatDate(trip.dates.from)} · {tripDuration(trip.dates.from, trip.dates.to)}
+                        </p>
+                      )}
+                      {/* People */}
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {trip.people.map(p=>(
+                          <span key={p} className={`tag ${personColor(p, allPeople)} text-white text-xs`}>{p}</span>
+                        ))}
+                      </div>
+                      {/* Media count */}
+                      {(trip.photoCount > 0 || trip.videoCount > 0) && (
+                        <p className="text-xs text-gray-500">📷 {trip.photoCount} photos · 🎥 {trip.videoCount} videos</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Modals */}
+          {selectedTrip && !editingTrip && (
+            <TripDetail
+              trip={selectedTrip}
+              allPeople={allPeople}
+              onClose={()=>setSelectedTrip(null)}
+              onEdit={()=>setEditingTrip(selectedTrip)}
+              onDelete={()=>{ saveTrips(trips.filter(t=>t.id!==selectedTrip.id)); setSelectedTrip(null); }}
+            />
+          )}
+          {(editingTrip || showAddForm) && (
+            <TripForm
+              trip={editingTrip||null}
+              allPeople={allPeople}
+              onSave={handleSave}
+              onClose={()=>{ setEditingTrip(null); setShowAddForm(false); }}
+            />
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
