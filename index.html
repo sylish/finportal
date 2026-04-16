@@ -547,11 +547,11 @@
                   <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-4 border border-slate-700">
                     <h2 className="text-xl font-bold mb-3">📦 Asset Type Summary</h2>
                     <div className="space-y-2">
-                      {defaultCategories.map((cat) => {
-                        const data = categoryBreakdown[cat];
-                        const pct = summaryStats.current ? (data.current / summaryStats.current) * 100 : 0;
-                        if (pct === 0) return null;
-                        return (
+                      {[...defaultCategories]
+                        .map((cat) => ({ cat, data: categoryBreakdown[cat], pct: summaryStats.current ? (categoryBreakdown[cat].current / summaryStats.current) * 100 : 0 }))
+                        .filter(({ pct }) => pct > 0)
+                        .sort((a, b) => b.data.current - a.data.current)
+                        .map(({ cat, pct }) => (
                           <div key={cat}>
                             <div className="flex justify-between mb-0.5">
                               <span className="text-sm font-medium">{CATEGORY_ICONS[cat]} {cat}</span>
@@ -561,8 +561,8 @@
                               <div className="h-full rounded-full progress-bar" style={{ width: pct + "%", background: COLORS[defaultCategories.indexOf(cat)] }}></div>
                             </div>
                           </div>
-                        );
-                      })}
+                        ))
+                      }
                     </div>
                   </div>
 
