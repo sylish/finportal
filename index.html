@@ -566,41 +566,53 @@
                     </div>
                   </div>
 
-                  {/* Panel 2: Asset Allocation Wheel */}
+                  {/* Panel 2: Gain by Asset Type */}
                   <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-4 border border-slate-700">
-                    <h2 className="text-lg font-bold mb-1">🥧 Asset Allocation</h2>
-                    <p className="text-xs text-gray-400 mb-3">Current value distribution</p>
+                    <h2 className="text-lg font-bold mb-1">📈 Gain by Asset Type</h2>
+                    <p className="text-xs text-gray-400 mb-3">Where your money is actually growing</p>
                     {(() => {
-                      const chartData = defaultCategories
-                        .map((cat, i) => ({
-                          cat, color: COLORS[i],
-                          value: categoryBreakdown[cat].current,
-                          pct: summaryStats.current ? (categoryBreakdown[cat].current / summaryStats.current) * 100 : 0
-                        }))
-                        .filter(d => d.value > 0)
-                        .sort((a, b) => b.value - a.value);
-                      let cumPct = 0;
-                      const stops = chartData.map(d => {
-                        const start = cumPct;
-                        cumPct += d.pct;
-                        return `${d.color} ${start.toFixed(1)}% ${cumPct.toFixed(1)}%`;
-                      }).join(', ');
+                      const gainData = defaultCategories
+                        .map((cat, i) => {
+                          const d = categoryBreakdown[cat];
+                          const gain = d.current - d.invested;
+                          const returnPct = d.invested > 0 ? (gain / d.invested) * 100 : 0;
+                          return { cat, color: COLORS[i], gain, returnPct, invested: d.invested, current: d.current };
+                        })
+                        .filter(d => d.current > 0)
+                        .sort((a, b) => b.gain - a.gain);
+                      const maxGain = Math.max(...gainData.map(d => Math.abs(d.gain)), 1);
                       return (
-                        <div className="flex items-center gap-4">
-                          <div style={{
-                            width: 120, height: 120, borderRadius: '50%', flexShrink: 0,
-                            background: chartData.length ? `conic-gradient(${stops})` : '#334155',
-                            boxShadow: 'inset 0 0 0 36px #1e293b'
-                          }} />
-                          <div className="flex-1 space-y-1.5 overflow-y-auto" style={{ maxHeight: 120 }}>
-                            {chartData.map(d => (
-                              <div key={d.cat} className="flex items-center gap-2">
-                                <div style={{ width: 8, height: 8, borderRadius: '50%', background: d.color, flexShrink: 0 }} />
-                                <span className="text-xs text-gray-300 flex-1 truncate">{d.cat}</span>
-                                <span className="text-xs font-semibold">{d.pct.toFixed(0)}%</span>
+                        <div className="space-y-2 overflow-y-auto" style={{ maxHeight: 178 }}>
+                          {gainData.map(d => {
+                            const isPos = d.gain >= 0;
+                            const barW = (Math.abs(d.gain) / maxGain) * 100;
+                            return (
+                              <div key={d.cat} className="rounded-lg px-3 py-2" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                                <div className="flex justify-between items-center mb-1.5">
+                                  <span className="text-xs font-medium">{CATEGORY_ICONS[d.cat]} {d.cat}</span>
+                                  <div className="text-right">
+                                    <span className="text-xs font-bold" style={{ color: isPos ? "#22c55e" : "#ef4444" }}>
+                                      {isPos ? "+" : ""}{formatCurrency(d.gain)}
+                                    </span>
+                                    <span className="text-xs ml-2 px-1.5 py-0.5 rounded-full font-semibold" style={{
+                                      background: isPos ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
+                                      color: isPos ? "#22c55e" : "#ef4444"
+                                    }}>
+                                      {isPos ? "+" : ""}{d.returnPct.toFixed(1)}%
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="w-full h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.08)" }}>
+                                  <div className="h-full rounded-full transition-all" style={{
+                                    width: barW + "%",
+                                    background: isPos
+                                      ? `linear-gradient(90deg, ${d.color}, #22c55e)`
+                                      : "linear-gradient(90deg, #ef4444, #f87171)"
+                                  }} />
+                                </div>
                               </div>
-                            ))}
-                          </div>
+                            );
+                          })}
                         </div>
                       );
                     })()}
