@@ -542,7 +542,8 @@
 
                 {/* Summary Cards Row */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-                  {/* Asset Type Allocation Summary */}
+
+                  {/* Panel 1: Asset Type Allocation Summary */}
                   <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-4 border border-slate-700">
                     <h2 className="text-lg font-bold mb-3">📦 Asset Type Summary</h2>
                     <div className="space-y-2">
@@ -564,6 +565,87 @@
                       })}
                     </div>
                   </div>
+
+                  {/* Panel 2: Asset Allocation Wheel */}
+                  <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-4 border border-slate-700">
+                    <h2 className="text-lg font-bold mb-1">🥧 Asset Allocation</h2>
+                    <p className="text-xs text-gray-400 mb-3">Current value distribution</p>
+                    {(() => {
+                      const chartData = defaultCategories
+                        .map((cat, i) => ({
+                          cat, color: COLORS[i],
+                          value: categoryBreakdown[cat].current,
+                          pct: summaryStats.current ? (categoryBreakdown[cat].current / summaryStats.current) * 100 : 0
+                        }))
+                        .filter(d => d.value > 0)
+                        .sort((a, b) => b.value - a.value);
+                      let cumPct = 0;
+                      const stops = chartData.map(d => {
+                        const start = cumPct;
+                        cumPct += d.pct;
+                        return `${d.color} ${start.toFixed(1)}% ${cumPct.toFixed(1)}%`;
+                      }).join(', ');
+                      return (
+                        <div className="flex items-center gap-4">
+                          <div style={{
+                            width: 120, height: 120, borderRadius: '50%', flexShrink: 0,
+                            background: chartData.length ? `conic-gradient(${stops})` : '#334155',
+                            boxShadow: 'inset 0 0 0 36px #1e293b'
+                          }} />
+                          <div className="flex-1 space-y-1.5 overflow-y-auto" style={{ maxHeight: 120 }}>
+                            {chartData.map(d => (
+                              <div key={d.cat} className="flex items-center gap-2">
+                                <div style={{ width: 8, height: 8, borderRadius: '50%', background: d.color, flexShrink: 0 }} />
+                                <span className="text-xs text-gray-300 flex-1 truncate">{d.cat}</span>
+                                <span className="text-xs font-semibold">{d.pct.toFixed(0)}%</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Panel 3: Value by Asset + Gain Summary */}
+                  <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-4 border border-slate-700">
+                    <h2 className="text-lg font-bold mb-1">💰 Value by Asset</h2>
+                    <p className="text-xs text-gray-400 mb-3">Sorted by current value</p>
+                    <div className="space-y-2 overflow-y-auto" style={{ maxHeight: 118 }}>
+                      {defaultCategories
+                        .map((cat, i) => ({
+                          cat, color: COLORS[i],
+                          value: categoryBreakdown[cat].current,
+                          pct: summaryStats.current ? (categoryBreakdown[cat].current / summaryStats.current) * 100 : 0
+                        }))
+                        .filter(d => d.value > 0)
+                        .sort((a, b) => b.value - a.value)
+                        .map(d => (
+                          <div key={d.cat}>
+                            <div className="flex justify-between text-xs mb-0.5">
+                              <span className="text-gray-300">{CATEGORY_ICONS[d.cat]} {d.cat}</span>
+                              <span className="font-semibold">{formatCurrency(d.value)}</span>
+                            </div>
+                            <div className="w-full h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }}>
+                              <div className="h-full rounded-full" style={{ width: d.pct + "%", background: d.color }} />
+                            </div>
+                          </div>
+                        ))
+                      }
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-slate-600 grid grid-cols-3 gap-2">
+                      {[
+                        { label: "Invested", value: formatCurrency(summaryStats.invested), color: "#f59e0b" },
+                        { label: "Gain", value: formatCurrency(summaryStats.gain), color: summaryStats.gain >= 0 ? "#22c55e" : "#ef4444" },
+                        { label: "Return", value: summaryStats.gainPct.toFixed(1) + "%", color: summaryStats.gain >= 0 ? "#22c55e" : "#ef4444" },
+                      ].map(m => (
+                        <div key={m.label} className="text-center rounded-lg p-2" style={{ background: "rgba(255,255,255,0.05)" }}>
+                          <div className="text-xs text-gray-400 mb-1">{m.label}</div>
+                          <div className="text-xs font-bold" style={{ color: m.color }}>{m.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                 </div>
 
                 {/* Detailed Breakdown Cards Row */}
