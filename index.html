@@ -570,7 +570,7 @@
                   <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-4 border border-slate-700">
                     <h2 className="text-xl font-bold mb-1">💰 Value by Asset</h2>
                     <p className="text-sm text-gray-400 mb-3">Sorted by current value</p>
-                    <div className="space-y-2 overflow-y-auto" style={{ maxHeight: 118 }}>
+                    <div className="space-y-2" style={{ maxHeight: 320, overflowY: 'auto' }}>
                       {defaultCategories
                         .map((cat, i) => ({
                           cat, color: COLORS[i],
@@ -622,7 +622,7 @@
                         .sort((a, b) => b.current - a.current);
                       const maxGain = Math.max(...gainData.map(d => Math.abs(d.gain)), 1);
                       return (
-                        <div className="space-y-2 overflow-y-auto" style={{ maxHeight: 178 }}>
+                        <div className="space-y-2" style={{ maxHeight: 320, overflowY: 'auto' }}>
                           {gainData.map(d => {
                             const isPos = d.gain >= 0;
                             const barW = (Math.abs(d.gain) / maxGain) * 100;
