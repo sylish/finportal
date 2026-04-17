@@ -543,34 +543,11 @@
                 {/* Summary Cards Row */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
 
-                  {/* Panel 1: Asset Type Allocation Summary */}
+                  {/* Panel 1: Combined Asset Value + Allocation */}
                   <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-4 border border-slate-700">
-                    <h2 className="text-xl font-bold mb-3">📦 Asset Type Summary</h2>
-                    <div className="space-y-2">
-                      {[...defaultCategories]
-                        .map((cat) => ({ cat, data: categoryBreakdown[cat], pct: summaryStats.current ? (categoryBreakdown[cat].current / summaryStats.current) * 100 : 0 }))
-                        .filter(({ pct }) => pct > 0)
-                        .sort((a, b) => b.data.current - a.data.current)
-                        .map(({ cat, pct }) => (
-                          <div key={cat}>
-                            <div className="flex justify-between mb-0.5">
-                              <span className="text-sm font-medium">{CATEGORY_ICONS[cat]} {cat}</span>
-                              <span className="text-sm text-gray-400">{pct.toFixed(0)}%</span>
-                            </div>
-                            <div className="w-full h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }}>
-                              <div className="h-full rounded-full progress-bar" style={{ width: pct + "%", background: COLORS[defaultCategories.indexOf(cat)] }}></div>
-                            </div>
-                          </div>
-                        ))
-                      }
-                    </div>
-                  </div>
-
-                  {/* Panel 2: Value by Asset + Gain Summary */}
-                  <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-4 border border-slate-700">
-                    <h2 className="text-xl font-bold mb-1">💰 Value by Asset</h2>
-                    <p className="text-sm text-gray-400 mb-3">Sorted by current value</p>
-                    <div className="space-y-2" style={{ maxHeight: 320, overflowY: 'auto' }}>
+                    <h2 className="text-xl font-bold mb-1">📦 Asset Allocation</h2>
+                    <p className="text-sm text-gray-400 mb-3">Value &amp; portfolio share by asset type</p>
+                    <div className="space-y-3">
                       {defaultCategories
                         .map((cat, i) => ({
                           cat, color: COLORS[i],
@@ -581,33 +558,24 @@
                         .sort((a, b) => b.value - a.value)
                         .map(d => (
                           <div key={d.cat}>
-                            <div className="flex justify-between text-sm mb-0.5">
-                              <span className="text-gray-300">{CATEGORY_ICONS[d.cat]} {d.cat}</span>
-                              <span className="font-semibold">{formatCurrency(d.value)}</span>
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-sm font-medium text-gray-200">{CATEGORY_ICONS[d.cat]} {d.cat}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold">{formatCurrency(d.value)}</span>
+                                <span className="text-xs px-1.5 py-0.5 rounded-full font-medium" style={{ background: "rgba(255,255,255,0.08)", color: "#94a3b8" }}>{d.pct.toFixed(1)}%</span>
+                              </div>
                             </div>
-                            <div className="w-full h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }}>
-                              <div className="h-full rounded-full" style={{ width: d.pct + "%", background: d.color }} />
+                            <div className="w-full h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.08)" }}>
+                              <div className="h-full rounded-full transition-all" style={{ width: d.pct + "%", background: d.color }} />
                             </div>
                           </div>
                         ))
                       }
                     </div>
-                    <div className="mt-3 pt-3 border-t border-slate-600 grid grid-cols-3 gap-2">
-                      {[
-                        { label: "Invested", value: formatCurrency(summaryStats.invested), color: "#f59e0b" },
-                        { label: "Gain", value: formatCurrency(summaryStats.gain), color: summaryStats.gain >= 0 ? "#22c55e" : "#ef4444" },
-                        { label: "Return", value: summaryStats.gainPct.toFixed(1) + "%", color: summaryStats.gain >= 0 ? "#22c55e" : "#ef4444" },
-                      ].map(m => (
-                        <div key={m.label} className="text-center rounded-lg p-2" style={{ background: "rgba(255,255,255,0.05)" }}>
-                          <div className="text-sm text-gray-400 mb-1">{m.label}</div>
-                          <div className="text-sm font-bold" style={{ color: m.color }}>{m.value}</div>
-                        </div>
-                      ))}
-                    </div>
                   </div>
 
-                  {/* Panel 3: Gain by Asset Type */}
-                  <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-4 border border-slate-700">
+                  {/* Panel 2: Gain by Asset Type — spans 2 columns */}
+                  <div className="lg:col-span-2 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-4 border border-slate-700">
                     <h2 className="text-xl font-bold mb-1">📈 Gain by Asset Type</h2>
                     <p className="text-sm text-gray-400 mb-3">Where your money is actually growing</p>
                     {(() => {
@@ -622,7 +590,7 @@
                         .sort((a, b) => b.current - a.current);
                       const maxGain = Math.max(...gainData.map(d => Math.abs(d.gain)), 1);
                       return (
-                        <div className="space-y-2" style={{ maxHeight: 320, overflowY: 'auto' }}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           {gainData.map(d => {
                             const isPos = d.gain >= 0;
                             const barW = (Math.abs(d.gain) / maxGain) * 100;
@@ -630,11 +598,11 @@
                               <div key={d.cat} className="rounded-lg px-3 py-2" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
                                 <div className="flex justify-between items-center mb-1.5">
                                   <span className="text-sm font-medium">{CATEGORY_ICONS[d.cat]} {d.cat}</span>
-                                  <div className="text-right">
+                                  <div className="flex items-center gap-1.5">
                                     <span className="text-sm font-bold" style={{ color: isPos ? "#22c55e" : "#ef4444" }}>
                                       {isPos ? "+" : ""}{formatCurrency(d.gain)}
                                     </span>
-                                    <span className="text-sm ml-2 px-1.5 py-0.5 rounded-full font-semibold" style={{
+                                    <span className="text-xs px-1.5 py-0.5 rounded-full font-semibold" style={{
                                       background: isPos ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
                                       color: isPos ? "#22c55e" : "#ef4444"
                                     }}>
