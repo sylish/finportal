@@ -82,7 +82,7 @@
       if (n >= 100000) return "₹" + (n / 100000).toFixed(2) + " L";
       return "₹" + n.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     };
-    const formatPct = (n) => (n >= 0 ? "+" : "") + n.toFixed(2) + "%";
+    const formatPct = (n) => (n >= 0 ? "+" : "") + n.toFixed(1) + "%";
     const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "2-digit" });
 
     const calculatePerformanceMetrics = (investments) => {
