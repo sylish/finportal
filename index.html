@@ -744,13 +744,14 @@
                       <tbody>
                         {topHoldings.map((inv) => {
                           const gain = inv.current - inv.invested;
-                          const gainPct = (gain / (inv.invested || 1)) * 100;
+                          const gainPct = inv.invested > 0 ? (gain / inv.invested) * 100 : null;
+                          const gainPctStr = gainPct !== null ? ` (${formatPct(gainPct)})` : "";
                           return (
                             <tr key={inv.id} className="border-b border-slate-700 hover:bg-slate-700/30">
                               <td className="py-3 px-3">{CATEGORY_ICONS[inv.category]} {inv.name}</td>
                               <td className="text-right py-3 px-3">{inv.category}</td>
                               <td className="text-right py-3 px-3 font-medium">{formatCurrency(inv.current)}</td>
-                              <td className="text-right py-3 px-3" style={{color: gain >= 0 ? "#10b981" : "#ef4444"}}>{formatCurrency(gain)} ({formatPct(gainPct)})</td>
+                              <td className="text-right py-3 px-3" style={{color: gain >= 0 ? "#10b981" : "#ef4444"}}>{formatCurrency(gain)}{gainPctStr}</td>
                               <td className="text-right py-3 px-3 text-gray-400 text-sm">{inv.portfolioName}</td>
                             </tr>
                           );
@@ -846,7 +847,7 @@
                               <tbody>
                                 {portfolio.investments.map((inv) => {
                                   const gain = inv.current - inv.invested;
-                                  const gainPct = (gain / (inv.invested || 1)) * 100;
+                                  const gainPct = inv.invested > 0 ? (gain / inv.invested) * 100 : null;
                                   const isEditingInv = editingInvestmentId === inv.id;
                                   return (
                                     <tr key={inv.id} className="border-b border-slate-700 hover:bg-slate-700/30">
@@ -870,7 +871,7 @@
                                           <td className="text-right py-3 px-3">{inv.category}</td>
                                           <td className="text-right py-3 px-3">{formatCurrency(inv.invested)}</td>
                                           <td className="text-right py-3 px-3">{formatCurrency(inv.current)}</td>
-                                          <td className="text-right py-3 px-3" style={{color: gain >= 0 ? "#10b981" : "#ef4444"}}>{formatCurrency(gain)} ({formatPct(gainPct)})</td>
+                                          <td className="text-right py-3 px-3" style={{color: gain >= 0 ? "#10b981" : "#ef4444"}}>{formatCurrency(gain)}{gainPct !== null ? ` (${formatPct(gainPct)})` : ""}</td>
                                           <td className="text-center py-3 px-3">
                                             <button onClick={() => startEditInvestment(portfolio.id, inv)} className="text-blue-400 hover:text-blue-300 mr-2">✏️</button>
                                             <button onClick={() => deleteInvestment(portfolio.id, inv.id)} className="text-red-400 hover:text-red-300">🗑️</button>
