@@ -540,7 +540,7 @@
                 {/* Overview Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                   <StatCard icon="📊" label="Total Current Value" value={formatCurrency(summaryStats.current)} sub={allInvestments.length + " investments across " + portfolios.length + " portfolios"} color="#22d3ee" />
-                  <StatCard icon="💵" label="Liquid Assets" value={formatCurrency((categoryBreakdown["Cash"]?.current||0)+(categoryBreakdown["Fixed Deposits"]?.current||0)+(categoryBreakdown["Stocks"]?.current||0)+(categoryBreakdown["Crypto"]?.current||0))} sub="Cash · Fixed Deposits · Stocks · Crypto" color="#10b981" />
+                  <StatCard icon="💵" label="Liquid Assets" value={formatCurrency((categoryBreakdown["Cash"]?.current||0)+(categoryBreakdown["Fixed Deposits"]?.current||0)+(categoryBreakdown["Stocks"]?.current||0))} sub="Cash · Fixed Deposits · Stocks" color="#10b981" />
                   <StatCard icon="📈" label="Long Term" value={formatCurrency((categoryBreakdown["Government Funds"]?.current||0)+(categoryBreakdown["Mutual Funds"]?.current||0)+(categoryBreakdown["Provident Fund"]?.current||0))} sub="Govt Funds · Mutual Funds · Provident Fund" color="#8b5cf6" />
                   <StatCard icon="🏠" label="Immovable Assets" value={formatCurrency((categoryBreakdown["Real Estate"]?.current||0)+(categoryBreakdown["Vehicles"]?.current||0)+(categoryBreakdown["Gold"]?.current||0))} sub="Property · Vehicles · Gold" color="#f59e0b" />
                 </div>
