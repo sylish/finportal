@@ -152,17 +152,54 @@
       );
     }
 
-    function StatCard({ icon, label, value, sub, color = "#6366f1" }) {
+    function StatCard({ icon, label, value, sub, color = "#6366f1", delta }) {
+      const isPos = delta >= 0;
       return (
-        <div className="rounded-2xl p-5 flex flex-col gap-2 transition-transform hover:scale-105"
-          style={{ background: "linear-gradient(145deg, rgba(30,27,75,0.8) 0%, rgba(15,23,42,0.8) 100%)", border: "1px solid rgba(255,255,255,0.06)", boxShadow: "0 4px 20px rgba(0,0,0,0.2)" }}>
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl text-2xl" style={{ background: `${color}22` }}>{icon}</div>
-            <span className="text-sm font-medium text-gray-400 uppercase tracking-wider">{label}</span>
-          </div>
-          <div className="text-3xl font-bold text-white">{value}</div>
-          {sub && <div className="text-base" style={{ color }}>{sub}</div>}
+        <div className="stat-glow rounded-2xl p-5 flex flex-col gap-1.5 fade-up"
+          style={{ background: "linear-gradient(160deg, #141927 0%, #0d1120 100%)", border: "1px solid rgba(255,255,255,0.07)", boxShadow: `0 0 0 0 ${color}`, borderLeft: `3px solid ${color}` }}>
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest">{label}</span>
+          <div className="text-2xl font-bold text-white tracking-tight">{value}</div>
+          {delta !== undefined && (
+            <span className="text-xs font-semibold" style={{ color: isPos ? "#10b981" : "#ef4444" }}>
+              {isPos ? "▲" : "▼"} {Math.abs(delta).toFixed(1)}% overall return
+            </span>
+          )}
+          {sub && <div className="text-xs text-gray-500 mt-0.5">{sub}</div>}
         </div>
+      );
+    }
+
+    /* Donut Chart */
+    function DonutChart({ data, size = 160 }) {
+      const total = data.reduce((s, d) => s + d.value, 0);
+      if (!total) return null;
+      const cx = size / 2, cy = size / 2, r = size * 0.38, stroke = size * 0.18;
+      let cumAngle = -90;
+      const slices = data.map(d => {
+        const pct = d.value / total;
+        const startAngle = cumAngle;
+        cumAngle += pct * 360;
+        const endAngle = cumAngle;
+        const start = polarToCart(cx, cy, r, startAngle);
+        const end = polarToCart(cx, cy, r, endAngle);
+        const large = endAngle - startAngle > 180 ? 1 : 0;
+        return { ...d, pct, start, end, large };
+      });
+      function polarToCart(cx, cy, r, deg) {
+        const rad = (deg * Math.PI) / 180;
+        return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+      }
+      return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          {slices.map((s, i) => (
+            <path key={i}
+              d={`M ${s.start.x} ${s.start.y} A ${r} ${r} 0 ${s.large} 1 ${s.end.x} ${s.end.y}`}
+              fill="none" stroke={s.color} strokeWidth={stroke} strokeLinecap="butt"
+              opacity={0.9}
+            />
+          ))}
+          <circle cx={cx} cy={cy} r={r - stroke / 2 - 2} fill="#0d1120" />
+        </svg>
       );
     }
 
@@ -497,82 +534,127 @@
       };
 
       return (
-        <div className="min-h-screen p-6 md:p-8">
+        <div className="min-h-screen p-6 md:p-8" style={{background:"#0b0f1a"}}>
           <div className="max-w-7xl mx-auto">
             {/* Header */}
-            <div className="mb-8">
-              <h1 className="text-4xl font-bold mb-2">💼 FinPortal</h1>
-              <p className="text-gray-400">Advanced portfolio management with comprehensive analytics</p>
+            <div className="flex items-center justify-between mb-8 pt-2">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm text-white" style={{background:"linear-gradient(135deg,#6366f1,#22d3ee)"}}>FP</div>
+                <div>
+                  <h1 className="text-xl font-bold tracking-tight text-white">FinPortal</h1>
+                  <p className="text-xs text-gray-500">Personal Finance Dashboard</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <div className="live-dot"></div>
+                <span>Live · {new Date().toLocaleDateString("en-IN", { day:"numeric", month:"short", year:"numeric" })}</span>
+              </div>
             </div>
 
             {/* Navigation */}
-            <div className="flex flex-wrap gap-3 mb-8 border-b border-gray-700 pb-4">
-              <button onClick={() => { setView("summary"); setSearchTerm(""); }} className={`px-4 py-2 rounded-lg font-medium transition-colors ${view === "summary" ? "bg-indigo-600 text-white" : "text-gray-400 hover:text-white"}`}>📊 Summary</button>
-              <button onClick={() => { setView("dashboard"); setSearchTerm(""); }} className={`px-4 py-2 rounded-lg font-medium transition-colors ${view === "dashboard" ? "bg-indigo-600 text-white" : "text-gray-400 hover:text-white"}`}>📈 Dashboard</button>
-              <button onClick={() => { setView("analytics"); setSearchTerm(""); }} className={`px-4 py-2 rounded-lg font-medium transition-colors ${view === "analytics" ? "bg-indigo-600 text-white" : "text-gray-400 hover:text-white"}`}>📉 Analytics</button>
-              <button onClick={() => setShowGoals(!showGoals)} className="px-4 py-2 rounded-lg font-medium text-gray-400 hover:text-white transition-colors">🎯 Goals</button>
-              <button onClick={() => setShowAlerts(!showAlerts)} className="px-4 py-2 rounded-lg font-medium text-gray-400 hover:text-white transition-colors">⚠️ Alerts</button>
-              <button onClick={() => setShowReports(!showReports)} className="px-4 py-2 rounded-lg font-medium text-gray-400 hover:text-white transition-colors">📄 Reports</button>
-              <button onClick={exportData} className="px-4 py-2 rounded-lg font-medium text-gray-400 hover:text-white transition-colors">⬇️ Export</button>
-              <label className="px-4 py-2 rounded-lg font-medium text-gray-400 hover:text-white transition-colors cursor-pointer">
-                ⬆️ Import
-                <input type="file" accept=".json" onChange={importData} style={{ display: "none" }} />
-              </label>
-              <button onClick={() => {
-                if (confirm("Reset to default data? This will clear all your current portfolios.")) {
-                  localStorage.removeItem("finportal_portfolios");
-                  localStorage.removeItem("finportal_goals");
-                  localStorage.removeItem("finportal_alerts");
-                  localStorage.removeItem("finportal_categories");
-                  setPortfolios(initialPortfolios);
-                  setGoals([]);
-                  setAlerts([]);
-                  setCategories(defaultCategories);
-                  setView("summary");
-                  alert("✅ Reset to defaults complete!");
-                }
-              }} className="px-4 py-2 rounded-lg font-medium text-gray-400 hover:text-white transition-colors">🔄 Reset</button>
+            <div className="flex items-center justify-between mb-8 border-b pb-0" style={{borderColor:"rgba(255,255,255,0.08)"}}>
+              <div className="flex gap-1">
+                {[["summary","Overview"],["dashboard","Portfolios"],["analytics","Analytics"]].map(([v,label]) => (
+                  <button key={v} onClick={() => { setView(v); setSearchTerm(""); }}
+                    className={`nav-tab px-4 py-3 text-sm font-medium transition-colors ${view === v ? "active text-white" : "text-gray-500 hover:text-gray-300"}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-1 pb-2">
+                <button onClick={() => setShowGoals(!showGoals)} className="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-300 rounded-lg hover:bg-white/5 transition-colors">Goals</button>
+                <button onClick={() => setShowAlerts(!showAlerts)} className="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-300 rounded-lg hover:bg-white/5 transition-colors">Alerts</button>
+                <button onClick={() => setShowReports(!showReports)} className="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-300 rounded-lg hover:bg-white/5 transition-colors">Reports</button>
+                <button onClick={exportData} className="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-300 rounded-lg hover:bg-white/5 transition-colors">Export</button>
+                <label className="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-300 rounded-lg hover:bg-white/5 transition-colors cursor-pointer">
+                  Import<input type="file" accept=".json" onChange={importData} style={{ display: "none" }} />
+                </label>
+                <button onClick={() => {
+                  if (confirm("Reset to default data? This will clear all your current portfolios.")) {
+                    localStorage.removeItem("finportal_portfolios");
+                    localStorage.removeItem("finportal_goals");
+                    localStorage.removeItem("finportal_alerts");
+                    localStorage.removeItem("finportal_categories");
+                    setPortfolios(initialPortfolios);
+                    setGoals([]);
+                    setAlerts([]);
+                    setCategories(defaultCategories);
+                    setView("summary");
+                  }
+                }} className="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-300 rounded-lg hover:bg-white/5 transition-colors">Reset</button>
+              </div>
             </div>
 
             {/* SUMMARY VIEW - Portfolio Overview */}
             {view === "summary" && (
               <>
                 {/* Overview Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-                  <StatCard icon="📊" label="Net Worth" value={formatCurrency(summaryStats.current)} sub={allInvestments.length + " investments across " + portfolios.length + " portfolios"} color="#22d3ee" />
-                  <StatCard icon="💵" label="Liquid Assets" value={formatCurrency((categoryBreakdown["Cash"]?.current||0)+(categoryBreakdown["Fixed Deposits"]?.current||0)+(categoryBreakdown["Stocks"]?.current||0))} sub="Cash · Fixed Deposits · Stocks" color="#10b981" />
-                  <StatCard icon="📈" label="Long Term" value={formatCurrency((categoryBreakdown["Government Funds"]?.current||0)+(categoryBreakdown["Mutual Funds"]?.current||0)+(categoryBreakdown["Provident Fund"]?.current||0))} sub="Govt Funds · Mutual Funds · Provident Fund" color="#8b5cf6" />
-                  <StatCard icon="🪙" label="Physical Assets" value={formatCurrency((categoryBreakdown["Gold"]?.current||0)+(categoryBreakdown["Vehicles"]?.current||0))} sub="Gold · Vehicles" color="#f97316" />
-                  <StatCard icon="🏠" label="Immovable Assets" value={formatCurrency(categoryBreakdown["Real Estate"]?.current||0)} sub="Property only" color="#f59e0b" />
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
+                  {(() => {
+                    const liquidInvested = (categoryBreakdown["Cash"]?.invested||0)+(categoryBreakdown["Fixed Deposits"]?.invested||0)+(categoryBreakdown["Stocks"]?.invested||0);
+                    const liquidCurrent = (categoryBreakdown["Cash"]?.current||0)+(categoryBreakdown["Fixed Deposits"]?.current||0)+(categoryBreakdown["Stocks"]?.current||0);
+                    const ltInvested = (categoryBreakdown["Government Funds"]?.invested||0)+(categoryBreakdown["Mutual Funds"]?.invested||0)+(categoryBreakdown["Provident Fund"]?.invested||0);
+                    const ltCurrent = (categoryBreakdown["Government Funds"]?.current||0)+(categoryBreakdown["Mutual Funds"]?.current||0)+(categoryBreakdown["Provident Fund"]?.current||0);
+                    const physInvested = (categoryBreakdown["Gold"]?.invested||0)+(categoryBreakdown["Vehicles"]?.invested||0);
+                    const physCurrent = (categoryBreakdown["Gold"]?.current||0)+(categoryBreakdown["Vehicles"]?.current||0);
+                    const reInvested = categoryBreakdown["Real Estate"]?.invested||0;
+                    const reCurrent = categoryBreakdown["Real Estate"]?.current||0;
+                    const pct = (inv, cur) => inv > 0 ? ((cur - inv) / inv) * 100 : 0;
+                    return (<>
+                      <StatCard label="Net Worth" value={formatCurrency(summaryStats.current)} delta={summaryStats.gainPct} sub={allInvestments.length + " investments · " + portfolios.length + " portfolios"} color="#22d3ee" />
+                      <StatCard label="Liquid Assets" value={formatCurrency(liquidCurrent)} delta={pct(liquidInvested, liquidCurrent)} sub="Cash · Fixed Deposits · Stocks" color="#10b981" />
+                      <StatCard label="Long Term" value={formatCurrency(ltCurrent)} delta={pct(ltInvested, ltCurrent)} sub="Govt Funds · Mutual Funds · PF" color="#8b5cf6" />
+                      <StatCard label="Physical Assets" value={formatCurrency(physCurrent)} delta={pct(physInvested, physCurrent)} sub="Gold · Vehicles" color="#f97316" />
+                      <StatCard label="Immovable Assets" value={formatCurrency(reCurrent)} delta={pct(reInvested, reCurrent)} sub="Real Estate only" color="#f59e0b" />
+                    </>);
+                  })()}
                 </div>
 
                 {/* Summary Cards Row */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
 
-                  {/* Panel 1: Combined Asset Value + Allocation */}
-                  <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-4 border border-slate-700">
-                    <h2 className="text-xl font-bold mb-1">📦 Asset Allocation</h2>
-                    <p className="text-sm text-gray-400 mb-3">Value &amp; portfolio share by asset type</p>
-                    <div className="space-y-3">
+                  {/* Panel 1: Asset Allocation with Donut Chart */}
+                  <div className="rounded-2xl p-5 border fade-up" style={{background:"linear-gradient(160deg,#141927,#0d1120)",borderColor:"rgba(255,255,255,0.07)"}}>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">Asset Allocation</p>
+                    {(() => {
+                      const sliceData = defaultCategories
+                        .map((cat,i) => ({ cat, color: COLORS[i], value: categoryBreakdown[cat].current, pct: summaryStats.current ? (categoryBreakdown[cat].current/summaryStats.current)*100 : 0 }))
+                        .filter(d => d.value > 0).sort((a,b) => b.value - a.value);
+                      return (
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className="flex-shrink-0">
+                            <DonutChart data={sliceData} size={120} />
+                          </div>
+                          <div className="flex-1 space-y-2">
+                            {sliceData.slice(0,4).map(d => (
+                              <div key={d.cat} className="flex items-center justify-between">
+                                <div className="flex items-center gap-1.5">
+                                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{background:d.color}}></div>
+                                  <span className="text-xs text-gray-400">{d.cat}</span>
+                                </div>
+                                <span className="text-xs font-semibold text-white">{d.pct.toFixed(1)}%</span>
+                              </div>
+                            ))}
+                            {sliceData.length > 4 && <p className="text-xs text-gray-600">+{sliceData.length-4} more</p>}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                    <div className="space-y-2">
                       {defaultCategories
-                        .map((cat, i) => ({
-                          cat, color: COLORS[i],
-                          value: categoryBreakdown[cat].current,
-                          pct: summaryStats.current ? (categoryBreakdown[cat].current / summaryStats.current) * 100 : 0
-                        }))
-                        .filter(d => d.value > 0)
-                        .sort((a, b) => b.value - a.value)
+                        .map((cat,i) => ({ cat, color: COLORS[i], value: categoryBreakdown[cat].current, pct: summaryStats.current ? (categoryBreakdown[cat].current/summaryStats.current)*100 : 0 }))
+                        .filter(d => d.value > 0).sort((a,b) => b.value - a.value)
                         .map(d => (
                           <div key={d.cat}>
                             <div className="flex justify-between items-center mb-1">
-                              <span className="text-sm font-medium text-gray-200">{CATEGORY_ICONS[d.cat]} {d.cat}</span>
+                              <span className="text-xs font-medium text-gray-300">{d.cat}</span>
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-semibold">{formatCurrency(d.value)}</span>
-                                <span className="text-xs px-1.5 py-0.5 rounded-full font-medium" style={{ background: "rgba(255,255,255,0.08)", color: "#94a3b8" }}>{d.pct.toFixed(1)}%</span>
+                                <span className="text-xs font-semibold text-white">{formatCurrency(d.value)}</span>
+                                <span className="text-xs font-medium" style={{color:d.color}}>{d.pct.toFixed(1)}%</span>
                               </div>
                             </div>
-                            <div className="w-full h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.08)" }}>
-                              <div className="h-full rounded-full transition-all" style={{ width: d.pct + "%", background: d.color }} />
+                            <div className="w-full h-1 rounded-full" style={{background:"rgba(255,255,255,0.06)"}}>
+                              <div className="h-full rounded-full progress-bar" style={{width:d.pct+"%",background:d.color}} />
                             </div>
                           </div>
                         ))
@@ -581,9 +663,8 @@
                   </div>
 
                   {/* Panel 2: Gain by Asset Type — spans 2 columns */}
-                  <div className="lg:col-span-2 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-4 border border-slate-700">
-                    <h2 className="text-xl font-bold mb-1">📈 Gain by Asset Type</h2>
-                    <p className="text-sm text-gray-400 mb-3">Where your money is actually growing</p>
+                  <div className="lg:col-span-2 rounded-2xl p-5 border fade-up" style={{background:"linear-gradient(160deg,#141927,#0d1120)",borderColor:"rgba(255,255,255,0.07)"}}>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">Return by Asset Type</p>
                     {(() => {
                       const gainData = defaultCategories
                         .map((cat, i) => {
@@ -638,8 +719,8 @@
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
 
                 {/* Detailed Breakdown - By Asset Type */}
-                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-4 border border-slate-700">
-                  <h2 className="text-xl font-bold mb-3">📊 Breakdown by Asset Type</h2>
+                <div className="rounded-2xl p-5 border fade-up" style={{background:"linear-gradient(160deg,#141927,#0d1120)",borderColor:"rgba(255,255,255,0.07)"}}>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">Breakdown by Asset Type</p>
                   <div className="space-y-2 max-h-96 overflow-y-auto">
                     {defaultCategories.map((cat) => {
                       const catData = categoryBreakdown[cat];
@@ -655,7 +736,7 @@
                       });
 
                       return (
-                        <div key={cat} className="p-3 bg-slate-700/40 rounded-lg border border-slate-600/50">
+                        <div key={cat} className="p-3 rounded-lg border" style={{background:"rgba(255,255,255,0.03)",borderColor:"rgba(255,255,255,0.06)"}}>
                           <div className="flex justify-between items-start mb-2">
                             <div>
                               <p className="text-base font-bold">{CATEGORY_ICONS[cat]} {cat}</p>
@@ -684,8 +765,8 @@
                 </div>
 
                 {/* Detailed Breakdown - By User */}
-                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-4 border border-slate-700">
-                  <h2 className="text-xl font-bold mb-3">👥 Breakdown by User</h2>
+                <div className="rounded-2xl p-5 border fade-up" style={{background:"linear-gradient(160deg,#141927,#0d1120)",borderColor:"rgba(255,255,255,0.07)"}}>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">Breakdown by Member</p>
                   <div className="space-y-2 max-h-96 overflow-y-auto">
                     {Object.entries(userBreakdown).map(([user, data]) => {
                       const pct = summaryStats.current ? (data.current / summaryStats.current) * 100 : 0;
@@ -704,7 +785,7 @@
                       });
 
                       return (
-                        <div key={user} className="p-3 bg-slate-700/40 rounded-lg border border-slate-600/50">
+                        <div key={user} className="p-3 rounded-lg border" style={{background:"rgba(255,255,255,0.03)",borderColor:"rgba(255,255,255,0.06)"}}>
                           <div className="flex justify-between items-start mb-2">
                             <div>
                               <p className="text-base font-bold">👤 {data.displayName}</p>
@@ -734,8 +815,8 @@
                 </div>
 
                 {/* Top Holdings */}
-                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700 mb-8">
-                  <h2 className="text-2xl font-bold mb-4">🏆 Top 10 Holdings</h2>
+                <div className="rounded-2xl p-5 border fade-up mb-8" style={{background:"linear-gradient(160deg,#141927,#0d1120)",borderColor:"rgba(255,255,255,0.07)"}}>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">Top Holdings</p>
                   <div className="overflow-x-auto">
                     <table className="w-full text-base">
                       <thead>
@@ -774,8 +855,8 @@
             {view === "dashboard" && (
               <>
                 {/* Add Portfolio */}
-                <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-2xl p-6 mb-8 border border-indigo-800">
-                  <h2 className="text-xl font-bold mb-4">➕ Add New Portfolio</h2>
+                <div className="rounded-2xl p-5 mb-6 border fade-up" style={{background:"linear-gradient(160deg,#141927,#0d1120)",borderColor:"rgba(99,102,241,0.25)"}}>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">Add New Portfolio</p>
                   <div className="flex flex-col md:flex-row gap-3">
                     <Field label="Portfolio Name" value={newPortfolio.name} onChange={(val) => setNewPortfolio({...newPortfolio, name: val})} placeholder="e.g., Emergency Fund" />
                     <Field label="Description" value={newPortfolio.description} onChange={(val) => setNewPortfolio({...newPortfolio, description: val})} placeholder="e.g., For emergencies" />
@@ -792,7 +873,7 @@
                     const metrics = calculatePerformanceMetrics(portfolio.investments);
                     const isEditing = editingPortfolioId === portfolio.id;
                     return (
-                      <div key={portfolio.id} className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700">
+                      <div key={portfolio.id} className="rounded-2xl p-5 border fade-up" style={{background:"linear-gradient(160deg,#141927,#0d1120)",borderColor:"rgba(255,255,255,0.07)"}}>
                         <div className="flex justify-between items-start mb-4">
                           {isEditing ? (
                             <div className="flex-1 mr-4">
@@ -901,8 +982,8 @@
             {/* ANALYTICS VIEW */}
             {view === "analytics" && (
               <div className="space-y-6">
-                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700">
-                  <h2 className="text-2xl font-bold mb-4">📊 Performance Analytics</h2>
+                <div className="rounded-2xl p-5 border fade-up" style={{background:"linear-gradient(160deg,#141927,#0d1120)",borderColor:"rgba(255,255,255,0.07)"}}>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">Performance Analytics</p>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
